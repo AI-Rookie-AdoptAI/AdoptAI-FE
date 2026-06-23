@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+/* Pretendard Variable Font */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
+@theme {
+  /* Brand (Orange/Brown) */
+  --color-brand-900: #241d17;
+  --color-brand-800: #2a211b;
+  --color-brand-700: #3a2e22;
+  --color-brand-600: #5a4a3a;
+  --color-brand-500: #8a5a2b;
+  --color-brand-400: #8a7a68;
+  --color-brand-300: #9a8b7c;
+  --color-brand-200: #cbb9a3;
+  --color-brand-100: #e4d8c8;
+  --color-brand-50: #ebe1d4;
+  --color-brand-25: #efe5d8;
+
+  /* Surface (Cream/Beige) */
+  --color-surface-200: #f3ede4;
+  --color-surface-100: #f3eadf;
+  --color-surface-50: #fbf7f1;
+
+  /* Green (Positive/Yes indicator) */
+  --color-green-700: #4e6443;
+  --color-green-500: #6f8a5f;
+
+  /* Font family */
+  --font-pretendard: "Pretendard Variable", Pretendard, -apple-system,
+    BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+}
+
+:root {
+  --background: #ebe1d4;
+  --foreground: #2a211b;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-pretendard);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
