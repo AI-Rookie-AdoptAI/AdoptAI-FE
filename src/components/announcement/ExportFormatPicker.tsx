@@ -47,8 +47,8 @@ export default function ExportFormatPicker({ open, onClose, draft, platformId }:
             disabled={loading !== null}
             className="w-full text-left flex items-center gap-3.5 p-3.5 rounded-[18px] border border-brand-100 bg-surface-50 hover:bg-brand-50 transition-colors disabled:opacity-50"
           >
-            <div className="w-10 h-10 bg-surface-100 rounded-[12px] flex items-center justify-center shrink-0 text-[13px] font-black text-brand-450">
-              {f.icon}
+            <div className="w-10 h-10 bg-surface-100 rounded-[12px] flex items-center justify-center shrink-0 text-brand-450">
+              <f.icon size={20} color="currentColor" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[14px] font-bold text-brand-800">{f.label}</p>

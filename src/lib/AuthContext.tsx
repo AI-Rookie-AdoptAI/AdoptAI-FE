@@ -19,6 +19,16 @@ import {
   saveTokens,
 } from "./auth";
 
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
+
+function mockLogin(email: string): { tokens: import("./types").AuthTokens; user: User } {
+  const name = email.split("@")[0] ?? "사용자";
+  return {
+    tokens: { accessToken: "mock-token", refreshToken: "mock-refresh", expiresIn: 86400 },
+    user: { id: "mock-user", email, name, createdAt: new Date().toISOString() },
+  };
+}
+
 interface AuthState {
   user: User | null;
   loading: boolean;
@@ -42,23 +52,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error: null,
   });
 
-  // Restore session on mount
+  // Restore session on mount — /auth/me로 user 정보 복원
   useEffect(() => {
     const token = getAccessToken();
     if (!token) {
       setState((s) => ({ ...s, loading: false }));
       return;
     }
-    // Token exists in cookie → trust it until first 401
-    // (lightweight: avoids an extra /me call on every page load)
-    setState((s) => ({ ...s, loading: false }));
+    apiGetMe(token)
+      .then((user) => setState({ user, loading: false, error: null }))
+      .catch(() => setState((s) => ({ ...s, loading: false })));
   }, []);
 
   const login = useCallback(
     async (data: LoginRequest) => {
       setState((s) => ({ ...s, loading: true, error: null }));
       try {
-        const { tokens, user } = await apiLogin(data);
+        const { tokens, user } = USE_MOCK ? mockLogin(data.email) : await apiLogin(data);
         saveTokens(tokens);
         setState({ user, loading: false, error: null });
         router.push("/");
@@ -77,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (data: SignupRequest) => {
       setState((s) => ({ ...s, loading: true, error: null }));
       try {
-        const { tokens, user } = await apiSignup(data);
+        const { tokens, user } = USE_MOCK ? mockLogin(data.email) : await apiSignup(data);
         saveTokens(tokens);
         setState({ user, loading: false, error: null });
         router.push("/");

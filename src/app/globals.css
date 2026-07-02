@@ -1,7 +1,7 @@
-@import "tailwindcss";
-
-/* Pretendard Variable Font */
+/* Pretendard Variable Font — must precede @import "tailwindcss" */
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
+@import "tailwindcss";
 
 @theme {
   /* Brand (Orange/Brown) */
@@ -51,31 +51,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Web-app mobile shell centering */
+/* Web-app full layout */
 .mobile-shell {
-  max-width: 430px;
-  margin: 0 auto;
+  width: 100%;
   min-height: 100dvh;
-  position: relative;
   background: #fbf7f1;
-}
-
-@media (min-width: 768px) {
-  .web-app-root {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    min-height: 100dvh;
-    background: #ebe1d4;
-    padding: 40px 0;
-  }
-  .mobile-shell {
-    border-radius: 48px;
-    box-shadow: 0 24px 80px -12px rgba(40, 28, 18, 0.35);
-    min-height: auto;
-    height: 812px;
-    overflow: hidden;
-  }
 }
 
 .scrollbar-hide {

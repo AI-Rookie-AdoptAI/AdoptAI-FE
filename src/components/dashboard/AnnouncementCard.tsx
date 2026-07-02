@@ -8,20 +8,26 @@ interface AnnouncementCardProps {
   announcement: Announcement;
 }
 
-const petGradients: Record<string, string> = {
-  "1": "from-[#eadccb] to-[#d6c1a6]",
-  "2": "from-[#e8e0d0] to-[#cfbe9e]",
-  "3": "from-[#e7d6c0] to-[#cbae89]",
-  "4": "from-[#e6dcc8] to-[#d2b891]",
-};
+const petGradients = [
+  "from-[#eadccb] to-[#d6c1a6]",
+  "from-[#e8e0d0] to-[#cfbe9e]",
+  "from-[#e7d6c0] to-[#cbae89]",
+  "from-[#e6dcc8] to-[#d2b891]",
+];
 
 export default function AnnouncementCard({ announcement }: AnnouncementCardProps) {
-  const { id, status, petInfo, photos, title } = announcement;
-  const gradient = petGradients[id] ?? "from-[#eadccb] to-[#d6c1a6]";
+  const { id, status, petInfo, photos, title, sessionId } = announcement;
+  const gradient = petGradients[parseInt(id) % petGradients.length] ?? petGradients[0];
+
+  // draft → 채팅 세션으로 복귀 / 나머지 → 상세 페이지
+  const href =
+    status === "draft"
+      ? `/chat${sessionId ? `?session=${sessionId}` : ""}`
+      : `/announcements/${id}`;
 
   return (
     <Link
-      href={`/announcements/${id}`}
+      href={href}
       className="flex items-center gap-3 bg-surface-50 rounded-[18px] px-[13px] py-[13px] border border-brand-75 hover:bg-surface-100 transition-colors"
     >
       <div className="w-[54px] h-[54px] rounded-[14px] shrink-0 overflow-hidden">
@@ -38,7 +44,9 @@ export default function AnnouncementCard({ announcement }: AnnouncementCardProps
           {title ?? petInfo.name ?? petInfo.breed}
         </p>
         <p className="text-[12px] text-brand-300 mt-0.5 truncate">
-          {petInfo.breed ?? petInfo.species} · {petInfo.gender === "male" ? "수컷" : petInfo.gender === "female" ? "암컷" : "미상"}
+          {petInfo.breed ?? petInfo.species}
+          {petInfo.gender !== "unknown" && ` · ${petInfo.gender === "male" ? "수컷" : "암컷"}`}
+          {petInfo.estimatedAge && ` · ${petInfo.estimatedAge.value}${petInfo.estimatedAge.unit}`}
         </p>
       </div>
 

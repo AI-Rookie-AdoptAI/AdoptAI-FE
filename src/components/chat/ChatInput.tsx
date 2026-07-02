@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { PlusCircleIcon, MicIcon, CameraIcon, SendIcon } from "@/components/ui/Icons";
+import { PlusCircleIcon, MicIcon, CameraIcon } from "@/components/ui/Icons";
 
 interface ChatInputProps {
   onSendText: (text: string) => void | Promise<void>;

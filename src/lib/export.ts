@@ -1,19 +1,35 @@
-import type { AnnouncementDraft, ExportFormat, Platform } from "./types";
+import type { AnnouncementDraft, ExportFormat, Platform, EstimatedAge } from "./types";
 import { PLATFORMS } from "./constants";
 
 export function getPlatform(id?: string): Platform | undefined {
   return PLATFORMS.find((p) => p.id === id);
 }
 
+// ─── 표시용 포맷 헬퍼 ──────────────────────────────────────────────────────────
+
+function fmtAge(age?: EstimatedAge): string {
+  if (!age) return "미상";
+  return `${age.value}${age.unit}`;
+}
+
+function fmtWeight(kg?: number): string {
+  if (kg == null) return "미상";
+  return `${kg} kg`;
+}
+
+function fmtGender(gender: string, neutered?: boolean): string {
+  const g = gender === "male" ? "수컷" : gender === "female" ? "암컷" : "미상";
+  const n = neutered === true ? "중성화 완료" : neutered === false ? "중성화 안 함" : null;
+  return n ? `${g} · ${n}` : g;
+}
+
+// ─── Builders ─────────────────────────────────────────────────────────────────
+
 function buildMarkdown(draft: AnnouncementDraft, platform?: Platform): string {
   const { petName, title, description, petInfo } = draft;
   const toneNote = platform ? `\n> 말투: ${platform.toneLabel} · 플랫폼: ${platform.name}` : "";
 
-  const healthLines = petInfo.healthConditions?.length
-    ? petInfo.healthConditions.join(", ")
-    : "특이사항 없음";
-
-  const lines = [
+  const rows: (string | null)[] = [
     `# ${title}`,
     toneNote,
     "",
@@ -27,30 +43,27 @@ function buildMarkdown(draft: AnnouncementDraft, platform?: Platform): string {
     `|------|------|`,
     `| 이름 | ${petName} |`,
     `| 종류 | ${petInfo.breed ?? petInfo.species} |`,
-    `| 성별 | ${petInfo.gender === "male" ? "수컷" : petInfo.gender === "female" ? "암컷" : "미상"} |`,
-    `| 중성화 | ${petInfo.neutered === true ? "완료" : petInfo.neutered === false ? "미완료" : "미상"} |`,
-    `| 추정 나이 | ${petInfo.estimatedAge ?? "미상"} |`,
-    `| 체중 | ${petInfo.weight ?? "미상"} |`,
-    `| 색상 | ${petInfo.color ?? "미상"} |`,
-    `| 건강 | ${healthLines} |`,
-    petInfo.rescueLocation ? `| 구조 장소 | ${petInfo.rescueLocation} |` : null,
+    `| 성별 | ${fmtGender(petInfo.gender, petInfo.neutered)} |`,
+    `| 추정 나이 | ${fmtAge(petInfo.estimatedAge)} |`,
+    `| 체중 | ${fmtWeight(petInfo.weightKg)} |`,
+    petInfo.appearance ? `| 외형 | ${petInfo.appearance} |` : null,
+    petInfo.healthConditions?.length
+      ? `| 건강 | ${petInfo.healthConditions.join(", ")} |`
+      : `| 건강 | 특이사항 없음 |`,
+    petInfo.personalityNotes ? `| 성격 | ${petInfo.personalityNotes} |` : null,
+    petInfo.rescueRegion ? `| 구조 지역 | ${petInfo.rescueRegion} |` : null,
     petInfo.rescueDate ? `| 구조 일자 | ${petInfo.rescueDate} |` : null,
-  ]
-    .filter((l) => l !== null)
-    .join("\n");
+    petInfo.shelterContact ? `| 보호소 연락처 | ${petInfo.shelterContact} |` : null,
+  ];
 
-  return lines;
+  return rows.filter((l) => l !== null).join("\n");
 }
 
 function buildPlainText(draft: AnnouncementDraft, platform?: Platform): string {
   const { petName, title, description, petInfo } = draft;
   const toneNote = platform ? `[말투: ${platform.toneLabel} · 플랫폼: ${platform.name}]\n\n` : "";
 
-  const gender = petInfo.gender === "male" ? "수컷" : petInfo.gender === "female" ? "암컷" : "미상";
-  const neutered = petInfo.neutered === true ? "완료" : petInfo.neutered === false ? "미완료" : "미상";
-  const health = petInfo.healthConditions?.join(", ") ?? "특이사항 없음";
-
-  return [
+  const lines: (string | null)[] = [
     title,
     "",
     toneNote + description,
@@ -58,13 +71,18 @@ function buildPlainText(draft: AnnouncementDraft, platform?: Platform): string {
     "─────────────────",
     `이름: ${petName}`,
     `종류: ${petInfo.breed ?? petInfo.species}`,
-    `성별: ${gender} / 중성화: ${neutered}`,
-    `나이: ${petInfo.estimatedAge ?? "미상"} / 체중: ${petInfo.weight ?? "미상"}`,
-    `건강: ${health}`,
-    petInfo.rescueLocation ? `구조: ${petInfo.rescueLocation}${petInfo.rescueDate ? ` (${petInfo.rescueDate})` : ""}` : null,
-  ]
-    .filter((l) => l !== null)
-    .join("\n");
+    `성별: ${fmtGender(petInfo.gender, petInfo.neutered)}`,
+    `나이: ${fmtAge(petInfo.estimatedAge)} / 체중: ${fmtWeight(petInfo.weightKg)}`,
+    petInfo.appearance ? `외형: ${petInfo.appearance}` : null,
+    `건강: ${petInfo.healthConditions?.join(", ") ?? "특이사항 없음"}`,
+    petInfo.personalityNotes ? `성격: ${petInfo.personalityNotes}` : null,
+    petInfo.rescueRegion
+      ? `구조: ${petInfo.rescueRegion}${petInfo.rescueDate ? ` (${petInfo.rescueDate})` : ""}`
+      : null,
+    petInfo.shelterContact ? `연락처: ${petInfo.shelterContact}` : null,
+  ];
+
+  return lines.filter((l) => l !== null).join("\n");
 }
 
 function buildJson(draft: AnnouncementDraft, platform?: Platform): string {
@@ -88,14 +106,10 @@ export function buildExportContent(
 ): string {
   const platform = getPlatform(platformId);
   switch (format) {
-    case "markdown":
-      return buildMarkdown(draft, platform);
-    case "text":
-      return buildPlainText(draft, platform);
-    case "json":
-      return buildJson(draft, platform);
-    case "clipboard":
-      return buildPlainText(draft, platform);
+    case "markdown":  return buildMarkdown(draft, platform);
+    case "text":      return buildPlainText(draft, platform);
+    case "json":      return buildJson(draft, platform);
+    case "clipboard": return buildPlainText(draft, platform);
   }
 }
 

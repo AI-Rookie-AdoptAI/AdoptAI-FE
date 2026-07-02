@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { XIcon } from "@/components/ui/Icons";
 
 interface ModalProps {
   open: boolean;
@@ -34,9 +35,7 @@ export default function Modal({ open, onClose, children, title }: ModalProps) {
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-brand-100 transition-colors text-brand-300"
               aria-label="닫기"
             >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M4 4L14 14M14 4L4 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
+              <XIcon size={18} color="currentColor" />
             </button>
           </div>
         )}

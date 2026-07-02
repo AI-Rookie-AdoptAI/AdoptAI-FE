@@ -58,11 +58,33 @@ const WELCOME: ChatMessage = makeMsg({
     "안녕하세요! 어떤 아이의 공고를 만들까요?\n구조한 아이의 **사진**과 **음성 메모**를 보내주시면 제가 정리해서 공고 초안을 만들어 드릴게요.",
 });
 
+// ─── Mock 세션 복원용 샘플 대화 ──────────────────────────────────────────────
+
+function makeMockRestoredMessages(): ChatMessage[] {
+  return [
+    WELCOME,
+    makeMsg({ role: "user", type: "image_group", content: "사진 2장 전송", metadata: { imageUrls: [], aiPickIndex: 0, aiConfidence: 88 } }),
+    makeMsg({ role: "assistant", type: "text", content: "대표 사진을 골랐어요. 정면을 보고 단독으로 찍힌 사진이 입양률이 높아요." }),
+    makeMsg({
+      role: "assistant", type: "pet_info_card", content: "들은 내용을 정리했어요",
+      metadata: {
+        petInfo: { species: "dog", breed: "믹스견", gender: "male", estimatedAge: { value: 3, unit: "년" as const }, weightKg: 5, appearance: "갈색 단모", healthConditions: ["슬개골 탈구 2기", "심장사상충 음성"] },
+      },
+    }),
+    makeMsg({
+      role: "assistant", type: "quick_chips", content: "중성화 수술은 했나요?",
+      metadata: { questionKey: "neutered", chips: [{ label: "했어요", value: "true" }, { label: "안 했어요", value: "false" }, { label: "모름", value: "unknown" }], currentQuestion: 1, totalQuestions: 2 },
+    }),
+  ];
+}
+
 // ─── Mock Provider ────────────────────────────────────────────────────────────
 
-function MockProvider({ children }: { children: ReactNode }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
-  const [stage, setStage] = useState<ChatStage>("start");
+function MockProvider({ children, initialSessionId }: { children: ReactNode; initialSessionId?: string }) {
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    initialSessionId ? makeMockRestoredMessages() : [WELCOME]
+  );
+  const [stage, setStage] = useState<ChatStage>(initialSessionId ? "clarifying" : "start");
   const [isLoading, setIsLoading] = useState(false);
   const [draft, setDraft] = useState<AnnouncementDraft | undefined>();
   const [platformId, setPlatformState] = useState<PlatformId | undefined>();
@@ -109,7 +131,9 @@ function MockProvider({ children }: { children: ReactNode }) {
       metadata: {
         petInfo: {
           species: "dog", breed: "믹스견", gender: "male",
-          estimatedAge: "약 3살", weight: "5kg", color: "갈색",
+          estimatedAge: { value: 3, unit: "년" as const },
+          weightKg: 5,
+          appearance: "갈색 단모",
           healthConditions: ["슬개골 탈구 2기", "심장사상충 음성"],
         },
       },
@@ -178,11 +202,14 @@ function MockProvider({ children }: { children: ReactNode }) {
           "사람을 무척 좋아하고 잘 따르는 3살 남아예요. OO동에서 구조되었고, 건강하게 새 가족을 기다리고 있어요.",
         petInfo: {
           name: "보리", species: "dog", breed: "믹스견", gender: "male",
-          estimatedAge: "약 3살", weight: "5kg", color: "갈색",
+          estimatedAge: { value: 3, unit: "년" as const },
+          weightKg: 5,
+          appearance: "갈색 단모",
           healthConditions: ["슬개골 탈구 2기", "심장사상충 음성"],
           neutered: a["neutered"] === "true",
           vaccinated: a["vaccinated"] === "true",
-          rescueLocation: "OO동", rescueDate: "5/18",
+          rescueRegion: "OO동", rescueDate: "2026-05-18",
+          shelterContact: "010-0000-0000",
         },
       };
       setDraft(newDraft);
@@ -218,19 +245,30 @@ function MockProvider({ children }: { children: ReactNode }) {
 
 // ─── Real API Provider ────────────────────────────────────────────────────────
 
-function ApiProvider({ children }: { children: ReactNode }) {
+function ApiProvider({ children, initialSessionId }: { children: ReactNode; initialSessionId?: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [stage, setStage] = useState<ChatStage>("start");
   const [isLoading, setIsLoading] = useState(false);
   const [draft, setDraft] = useState<AnnouncementDraft | undefined>();
   const [platformId, setPlatformState] = useState<PlatformId | undefined>();
-  const [sessionId, setSessionId] = useState<string | undefined>();
+  const [sessionId, setSessionId] = useState<string | undefined>(initialSessionId);
 
-  // 세션 최초 생성
+  // 세션 초기화: initialSessionId가 있으면 메시지 복원, 없으면 새 세션 생성
   useEffect(() => {
-    api.createSession()
-      .then(setSessionId)
-      .catch((e) => console.error("[ChatContext] 세션 생성 실패:", e));
+    if (initialSessionId) {
+      setIsLoading(true);
+      api.fetchMessages(initialSessionId)
+        .then((msgs) => {
+          if (msgs.length > 0) setMessages(msgs);
+        })
+        .catch((e) => console.error("[ChatContext] 메시지 복원 실패:", e))
+        .finally(() => setIsLoading(false));
+    } else {
+      api.createSession()
+        .then(setSessionId)
+        .catch((e) => console.error("[ChatContext] 세션 생성 실패:", e));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const add = useCallback((...msgs: ChatMessage[]) => {
@@ -258,25 +296,27 @@ function ApiProvider({ children }: { children: ReactNode }) {
       const tmpMsg: ChatMessage = { ...makeMsg({ role: "assistant", type: "text", content: "" }), id: tmpId };
       add(tmpMsg);
 
-      await api.sendTextStreaming(
-        sessionId,
-        text,
-        (delta) => {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === tmpId ? { ...m, content: m.content + delta } : m))
-          );
-        },
-        (result) => {
-          setMessages((prev) => prev.filter((m) => m.id !== tmpId));
-          applyResult(result.assistantMessages, result.stage, result.draft);
-          setIsLoading(false);
-        },
-        (err) => {
-          console.error("[ChatContext] 스트리밍 오류:", err);
-          setMessages((prev) => prev.filter((m) => m.id !== tmpId));
-          setIsLoading(false);
-        }
-      );
+      try {
+        await api.sendTextStreaming(
+          sessionId,
+          text,
+          (delta) => {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === tmpId ? { ...m, content: m.content + delta } : m))
+            );
+          },
+          (result) => {
+            setMessages((prev) => prev.filter((m) => m.id !== tmpId));
+            applyResult(result.assistantMessages, result.stage, result.draft);
+          },
+          (err) => {
+            console.error("[ChatContext] 스트리밍 오류:", err);
+            setMessages((prev) => prev.filter((m) => m.id !== tmpId));
+          }
+        );
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       try {
         const result = await api.sendTextMessage(sessionId, text);
@@ -369,11 +409,17 @@ function ApiProvider({ children }: { children: ReactNode }) {
 
 // ─── Public exports ───────────────────────────────────────────────────────────
 
-export function ChatProvider({ children }: { children: ReactNode }) {
+interface ChatProviderProps {
+  children: ReactNode;
+  /** 기존 세션 복원 시 전달 (AnnouncementCard draft → /chat?session=xxx) */
+  initialSessionId?: string;
+}
+
+export function ChatProvider({ children, initialSessionId }: ChatProviderProps) {
   return USE_MOCK ? (
-    <MockProvider>{children}</MockProvider>
+    <MockProvider initialSessionId={initialSessionId}>{children}</MockProvider>
   ) : (
-    <ApiProvider>{children}</ApiProvider>
+    <ApiProvider initialSessionId={initialSessionId}>{children}</ApiProvider>
   );
 }
 

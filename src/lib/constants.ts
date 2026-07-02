@@ -1,4 +1,16 @@
 import type { AnnouncementStatus, Platform, ExportFormat } from "./types";
+import type { ComponentType } from "react";
+import {
+  InstagramIcon,
+  MessageCircleIcon,
+  CoffeeIcon,
+  HeartIcon,
+  SlidersIcon,
+  FileTextIcon,
+  FileIcon,
+  CodeIcon,
+  ClipboardIcon,
+} from "@/components/ui/Icons";
 
 export const ANNOUNCEMENT_STATUS_LABEL: Record<AnnouncementStatus, string> = {
   draft: "작성 중",
@@ -18,7 +30,7 @@ export const PLATFORMS: Platform[] = [
   {
     id: "instagram",
     name: "인스타그램",
-    emoji: "📸",
+    icon: InstagramIcon,
     imageSize: { width: 1080, height: 1080, ratio: "1:1", label: "정사각형 1080×1080" },
     tone: "friendly",
     toneLabel: "감성적·친근한",
@@ -27,7 +39,7 @@ export const PLATFORMS: Platform[] = [
   {
     id: "kakao",
     name: "카카오 오픈채팅",
-    emoji: "💬",
+    icon: MessageCircleIcon,
     imageSize: { width: 1200, height: 675, ratio: "16:9", label: "가로형 1200×675" },
     tone: "warm",
     toneLabel: "따뜻하고 일상적인",
@@ -36,7 +48,7 @@ export const PLATFORMS: Platform[] = [
   {
     id: "naver_cafe",
     name: "네이버 카페",
-    emoji: "☕",
+    icon: CoffeeIcon,
     imageSize: { width: 800, height: 600, ratio: "4:3", label: "표준 800×600" },
     tone: "informative",
     toneLabel: "정보 중심·체계적인",
@@ -45,7 +57,7 @@ export const PLATFORMS: Platform[] = [
   {
     id: "poinhand",
     name: "포인핸드",
-    emoji: "🐾",
+    icon: HeartIcon,
     imageSize: { width: 800, height: 800, ratio: "1:1", label: "정사각형 800×800" },
     tone: "formal",
     toneLabel: "공식·정확한",
@@ -54,7 +66,7 @@ export const PLATFORMS: Platform[] = [
   {
     id: "custom",
     name: "직접 설정",
-    emoji: "✏️",
+    icon: SlidersIcon,
     imageSize: { width: 1080, height: 1080, ratio: "1:1", label: "자유 설정" },
     tone: "friendly",
     toneLabel: "직접 선택",
@@ -62,30 +74,37 @@ export const PLATFORMS: Platform[] = [
   },
 ];
 
-export const EXPORT_FORMATS: { id: ExportFormat; label: string; description: string; icon: string }[] = [
+type IconComponent = ComponentType<{ size?: number; color?: string; className?: string }>;
+
+export const EXPORT_FORMATS: {
+  id: ExportFormat;
+  label: string;
+  description: string;
+  icon: IconComponent;
+}[] = [
   {
     id: "markdown",
     label: "Markdown (.md)",
     description: "Notion, GitHub 등에 바로 붙여넣기",
-    icon: "M",
+    icon: FileTextIcon,
   },
   {
     id: "text",
     label: "일반 텍스트 (.txt)",
     description: "어떤 편집기에서도 열 수 있어요",
-    icon: "T",
+    icon: FileIcon,
   },
   {
     id: "json",
     label: "JSON (.json)",
     description: "시스템 연동, 데이터 백업용",
-    icon: "{}",
+    icon: CodeIcon,
   },
   {
     id: "clipboard",
     label: "클립보드 복사",
     description: "바로 붙여넣기 — 파일 저장 없음",
-    icon: "📋",
+    icon: ClipboardIcon,
   },
 ];
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChatProvider, useChatContext } from "@/lib/ChatContext";
 import ChatWindow from "@/components/chat/ChatWindow";
 import { PawIcon, ChevronLeftIcon, MoreHorizIcon } from "@/components/ui/Icons";
@@ -7,31 +9,43 @@ import Link from "next/link";
 
 export default function ChatPage() {
   return (
-    <ChatProvider>
+    <Suspense>
+      <ChatPageWithSession />
+    </Suspense>
+  );
+}
+
+function ChatPageWithSession() {
+  const params = useSearchParams();
+  const sessionId = params.get("session") ?? undefined;
+
+  return (
+    <ChatProvider initialSessionId={sessionId}>
       <ChatPageInner />
     </ChatProvider>
   );
 }
 
 function ChatPageInner() {
-  const { stage } = useChatContext();
+  const { stage, messages } = useChatContext();
+
+  const isResume = messages.length > 1; // 복원된 세션이면 웰컴 외 메시지 존재
 
   const statusMap: Record<string, { text: string; color: string }> = {
-    start: { text: "사실 기반 작성", color: "text-green-600" },
-    uploading: { text: "사진 분석 중…", color: "text-brand-300" },
-    processing: { text: "분석 중…", color: "text-brand-300" },
-    clarifying: { text: `확인이 필요해요`, color: "text-brand-500" },
-    draft_ready: { text: "초안 완성", color: "text-green-600" },
-    editing: { text: "수정 중", color: "text-brand-400" },
-    publishing: { text: "게시 중…", color: "text-brand-300" },
-    published: { text: "게시 완료", color: "text-green-600" },
+    start:      { text: "사실 기반 작성",   color: "text-green-600" },
+    uploading:  { text: "사진 분석 중…",    color: "text-brand-300" },
+    processing: { text: "분석 중…",         color: "text-brand-300" },
+    clarifying: { text: "확인이 필요해요",   color: "text-brand-500" },
+    draft_ready:{ text: "초안 완성",         color: "text-green-600" },
+    editing:    { text: "수정 중",           color: "text-brand-400" },
+    publishing: { text: "게시 중…",          color: "text-brand-300" },
+    published:  { text: "게시 완료",         color: "text-green-600" },
   };
 
   const status = statusMap[stage] ?? statusMap.start;
 
   return (
     <div className="flex flex-col h-full min-h-screen bg-surface-50">
-      {/* Chat header */}
       <header className="flex items-center gap-2.5 px-[18px] pt-[52px] pb-3 bg-surface-50 border-b border-brand-75 shrink-0">
         <Link
           href="/"
@@ -51,7 +65,9 @@ function ChatPageInner() {
             {(stage === "start" || stage === "draft_ready") && (
               <div className="w-1.5 h-1.5 rounded-full bg-green-600 shrink-0" />
             )}
-            <p className={`text-[11px] font-semibold ${status.color}`}>{status.text}</p>
+            <p className={`text-[11px] font-semibold ${status.color}`}>
+              {isResume ? `이어서 작성 중 · ${status.text}` : status.text}
+            </p>
           </div>
         </div>
 

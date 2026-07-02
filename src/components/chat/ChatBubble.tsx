@@ -87,12 +87,18 @@ export default function ChatBubble({ message, onChipSelect, onPublish, onEditDra
 
   if (type === "pet_info_card" && metadata?.petInfo) {
     const pi = metadata.petInfo;
+    const genderLabel = pi.gender === "male" ? "수컷" : pi.gender === "female" ? "암컷" : null;
+    const ageLabel = pi.estimatedAge
+      ? `${pi.estimatedAge.value}${pi.estimatedAge.unit}`
+      : null;
+    const weightLabel = pi.weightKg != null ? `${pi.weightKg}kg` : null;
+
     const tags = [
       pi.breed,
-      pi.estimatedAge,
-      pi.gender === "male" ? "수컷" : "암컷",
-      pi.weight,
-      pi.color,
+      ageLabel,
+      genderLabel,
+      weightLabel,
+      pi.appearance,
       ...(pi.healthConditions ?? []),
     ].filter(Boolean) as string[];
 
@@ -119,10 +125,13 @@ export default function ChatBubble({ message, onChipSelect, onPublish, onEditDra
                 );
               })}
             </div>
-            <div className="flex items-center gap-1.5 mt-2">
-              <VerifiedIcon size={14} color="#4e6443" />
-              <span className="text-[11.5px] font-semibold text-green-700">심장사상충 음성</span>
-            </div>
+            {/* 검사 음성 태그가 있을 때만 verified 배지 표시 */}
+            {(pi.healthConditions ?? []).filter((c) => c.includes("음성")).map((c, i) => (
+              <div key={i} className="flex items-center gap-1.5 mt-2">
+                <VerifiedIcon size={14} color="#4e6443" />
+                <span className="text-[11.5px] font-semibold text-green-700">{c}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -218,11 +227,20 @@ function DraftCard({
 
         <div className="border-t border-brand-25 pt-3 flex flex-col gap-2">
           {[
-            { label: "성별 · 중성화", value: `${petInfo.gender === "male" ? "수컷" : "암컷"} · ${petInfo.neutered ? "완료" : "안 함"}` },
-            { label: "체중", value: petInfo.weight ?? "미상" },
+            {
+              label: "성별 · 중성화",
+              value: `${petInfo.gender === "male" ? "수컷" : petInfo.gender === "female" ? "암컷" : "미상"} · ${petInfo.neutered === true ? "완료" : petInfo.neutered === false ? "안 함" : "미상"}`,
+            },
+            {
+              label: "나이 · 체중",
+              value: `${petInfo.estimatedAge ? `${petInfo.estimatedAge.value}${petInfo.estimatedAge.unit}` : "미상"} · ${petInfo.weightKg != null ? `${petInfo.weightKg}kg` : "미상"}`,
+            },
             { label: "건강", value: petInfo.healthConditions?.join(" · ") ?? "특이사항 없음" },
-            { label: "구조", value: `${petInfo.rescueLocation ?? ""}${petInfo.rescueDate ? ` · ${petInfo.rescueDate}` : ""}` },
-          ].map(({ label, value }) => (
+            {
+              label: "구조",
+              value: `${petInfo.rescueRegion ?? petInfo.rescueLocation ?? ""}${petInfo.rescueDate ? ` · ${petInfo.rescueDate}` : ""}`,
+            },
+          ].filter(({ value }) => value.trim() !== " · ").map(({ label, value }) => (
             <div key={label} className="flex items-start justify-between gap-2">
               <span className="text-[12.5px] text-brand-300 shrink-0">{label}</span>
               <span className="text-[12.5px] font-semibold text-brand-700 text-right">{value}</span>

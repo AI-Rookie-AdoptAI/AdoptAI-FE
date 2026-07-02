@@ -4,12 +4,14 @@ import { API_BASE_URL } from "./constants";
 const ACCESS_TOKEN_KEY = "adopt_access_token";
 const REFRESH_TOKEN_KEY = "adopt_refresh_token";
 
+// HTTPS 환경에서만 Secure 플래그 추가
+const SECURE = typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
+
 // ─── Token storage (cookies for middleware access) ────────────────────────────
 
 export function saveTokens(tokens: AuthTokens) {
-  const maxAge = tokens.expiresIn;
-  document.cookie = `${ACCESS_TOKEN_KEY}=${tokens.accessToken}; path=/; max-age=${maxAge}; SameSite=Lax`;
-  document.cookie = `${REFRESH_TOKEN_KEY}=${tokens.refreshToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+  document.cookie = `${ACCESS_TOKEN_KEY}=${tokens.accessToken}; path=/; max-age=${tokens.expiresIn}; SameSite=Lax${SECURE}`;
+  document.cookie = `${REFRESH_TOKEN_KEY}=${tokens.refreshToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax${SECURE}`;
 }
 
 export function clearTokens() {
@@ -17,10 +19,18 @@ export function clearTokens() {
   document.cookie = `${REFRESH_TOKEN_KEY}=; path=/; max-age=0`;
 }
 
-export function getAccessToken(): string | null {
+function getCookie(key: string): string | null {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${ACCESS_TOKEN_KEY}=([^;]*)`));
+  const match = document.cookie.match(new RegExp(`(?:^|; )${key}=([^;]*)`));
   return match ? decodeURIComponent(match[1]) : null;
+}
+
+export function getAccessToken(): string | null {
+  return getCookie(ACCESS_TOKEN_KEY);
+}
+
+export function getRefreshToken(): string | null {
+  return getCookie(REFRESH_TOKEN_KEY);
 }
 
 // ─── API helpers ──────────────────────────────────────────────────────────────

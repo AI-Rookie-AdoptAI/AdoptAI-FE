@@ -10,7 +10,7 @@
  */
 
 import { API_BASE_URL } from "./constants";
-import { getAccessToken } from "./auth";
+import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from "./auth";
 import type { ChatMessage, ChatStage, AnnouncementDraft, PetInfo } from "./types";
 
 // ─── Raw API types (백엔드 응답 형태) ─────────────────────────────────────────
@@ -31,23 +31,30 @@ interface ApiMessage {
   created_at: string;
 }
 
+/** 백엔드 slots.py (Pydantic v2) 과 1:1 대응 */
+interface ApiSlots {
+  // 필수 슬롯
+  breed?: string;
+  estimated_age?: { value: number; unit: "년" | "개월" };
+  sex?: "수컷" | "암컷" | "미상";
+  is_neutered?: boolean;
+  weight_kg?: number;
+  rescue_region?: string;
+  rescue_date?: string;         // "2026-06-30"
+  shelter_contact?: string;
+  // 선택 슬롯
+  appearance?: string;
+  health_conditions?: string[];
+  personality_notes?: string;
+}
+
 interface ApiDraft {
   pet_name: string;
   title: string;
   description: string;
-  pet_info: {
+  pet_info: ApiSlots & {
     name?: string;
     species: string;
-    breed?: string;
-    gender: "male" | "female" | "unknown";
-    estimated_age?: string;
-    weight?: string;
-    color?: string;
-    health_conditions?: string[];
-    neutered?: boolean;
-    vaccinated?: boolean;
-    rescue_location?: string;
-    rescue_date?: string;
   };
   representative_photo?: string;
 }
@@ -72,6 +79,13 @@ function mapApiMessage(m: ApiMessage): ChatMessage {
   };
 }
 
+/** snake_case API 성별 → PetGender */
+function mapSex(sex?: string): import("./types").PetGender {
+  if (sex === "수컷") return "male";
+  if (sex === "암컷") return "female";
+  return "unknown";
+}
+
 function mapApiDraft(d: ApiDraft): AnnouncementDraft {
   const pi = d.pet_info;
   return {
@@ -82,15 +96,16 @@ function mapApiDraft(d: ApiDraft): AnnouncementDraft {
       name: pi.name,
       species: pi.species,
       breed: pi.breed,
-      gender: pi.gender,
-      estimatedAge: pi.estimated_age,
-      weight: pi.weight,
-      color: pi.color,
+      gender: mapSex(pi.sex),
+      estimatedAge: pi.estimated_age,   // { value, unit }
+      weightKg: pi.weight_kg,
+      neutered: pi.is_neutered,
+      rescueRegion: pi.rescue_region,
+      rescueDate: pi.rescue_date,       // "2026-06-30"
+      shelterContact: pi.shelter_contact,
+      appearance: pi.appearance,
       healthConditions: pi.health_conditions,
-      neutered: pi.neutered,
-      vaccinated: pi.vaccinated,
-      rescueLocation: pi.rescue_location,
-      rescueDate: pi.rescue_date,
+      personalityNotes: pi.personality_notes,
     },
     representativePhoto: d.representative_photo,
   };
@@ -103,18 +118,89 @@ function authHeaders(): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// refresh 중복 요청 방지용 플래그
+let _refreshing: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  if (_refreshing) return _refreshing;
+  _refreshing = (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) return false;
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!res.ok) {
+        clearTokens();
+        return false;
+      }
+      const data = await res.json() as { access_token: string; refresh_token: string; expires_in: number };
+      saveTokens({ accessToken: data.access_token, refreshToken: data.refresh_token, expiresIn: data.expires_in });
+      return true;
+    } catch {
+      clearTokens();
+      return false;
+    } finally {
+      _refreshing = null;
+    }
+  })();
+  return _refreshing;
+}
+
 async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-      ...(init.headers ?? {}),
-    },
-  });
+  const doFetch = () =>
+    fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+        ...(init.headers ?? {}),
+      },
+    });
+
+  let res = await doFetch();
+
+  // 401 → 토큰 갱신 후 1회 재시도
+  if (res.status === 401) {
+    const ok = await tryRefresh();
+    if (ok) {
+      res = await doFetch();
+    } else {
+      // refresh도 실패 → 로그인 페이지로
+      if (typeof window !== "undefined") window.location.href = "/login";
+      throw new Error("인증이 만료됐어요. 다시 로그인해 주세요.");
+    }
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { detail?: string }).detail ?? `HTTP ${res.status}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+// multipart/form-data 전송용 (Content-Type 헤더 직접 지정 X → 브라우저가 boundary 자동 추가)
+async function apiFetchForm<T>(path: string, body: FormData): Promise<T> {
+  const doFetch = () =>
+    fetch(`${API_BASE_URL}${path}`, { method: "POST", headers: authHeaders(), body });
+
+  let res = await doFetch();
+
+  if (res.status === 401) {
+    const ok = await tryRefresh();
+    if (ok) {
+      res = await doFetch();
+    } else {
+      if (typeof window !== "undefined") window.location.href = "/login";
+      throw new Error("인증이 만료됐어요. 다시 로그인해 주세요.");
+    }
+  }
+
+  if (!res.ok) {
+    const body2 = await res.json().catch(() => ({}));
+    throw new Error((body2 as { detail?: string }).detail ?? `HTTP ${res.status}`);
   }
   return res.json() as Promise<T>;
 }
@@ -177,24 +263,13 @@ export async function sendImages(
   const form = new FormData();
   files.forEach((f) => form.append("images", f));
 
-  const res = await fetch(`${API_BASE_URL}/chat/sessions/${sessionId}/images`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: form,
-  });
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { detail?: string }).detail ?? `HTTP ${res.status}`);
-  }
-
-  const data = await res.json() as {
+  const data = await apiFetchForm<{
     assistant_messages: ApiMessage[];
     stage: ChatStage;
     representative_index: number;
     ai_confidence: number;
     parsed_pet_info?: ApiDraft["pet_info"];
-  };
+  }>(`/chat/sessions/${sessionId}/images`, form);
 
   return {
     assistantMessages: data.assistant_messages.map(mapApiMessage),
@@ -206,15 +281,16 @@ export async function sendImages(
           name: data.parsed_pet_info.name,
           species: data.parsed_pet_info.species,
           breed: data.parsed_pet_info.breed,
-          gender: data.parsed_pet_info.gender,
+          gender: mapSex(data.parsed_pet_info.sex),
           estimatedAge: data.parsed_pet_info.estimated_age,
-          weight: data.parsed_pet_info.weight,
-          color: data.parsed_pet_info.color,
-          healthConditions: data.parsed_pet_info.health_conditions,
-          neutered: data.parsed_pet_info.neutered,
-          vaccinated: data.parsed_pet_info.vaccinated,
-          rescueLocation: data.parsed_pet_info.rescue_location,
+          weightKg: data.parsed_pet_info.weight_kg,
+          neutered: data.parsed_pet_info.is_neutered,
+          rescueRegion: data.parsed_pet_info.rescue_region,
           rescueDate: data.parsed_pet_info.rescue_date,
+          shelterContact: data.parsed_pet_info.shelter_contact,
+          appearance: data.parsed_pet_info.appearance,
+          healthConditions: data.parsed_pet_info.health_conditions,
+          personalityNotes: data.parsed_pet_info.personality_notes,
         }
       : undefined,
   };
@@ -231,18 +307,10 @@ export async function sendVoice(
   form.append("audio", audioBlob, "voice.webm");
   form.append("duration_sec", String(durationSec));
 
-  const res = await fetch(`${API_BASE_URL}/chat/sessions/${sessionId}/voice`, {
-    method: "POST",
-    headers: authHeaders(),
-    body: form,
-  });
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as { detail?: string }).detail ?? `HTTP ${res.status}`);
-  }
-
-  const data = await res.json() as ApiSendMessageResponse;
+  const data = await apiFetchForm<ApiSendMessageResponse>(
+    `/chat/sessions/${sessionId}/voice`,
+    form
+  );
   return {
     assistantMessages: data.assistant_messages.map(mapApiMessage),
     stage: data.stage,
@@ -314,15 +382,28 @@ export async function sendTextStreaming(
   onError: (err: Error) => void
 ): Promise<void> {
   try {
-    const res = await fetch(`${API_BASE_URL}/chat/sessions/${sessionId}/messages/stream`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "text/event-stream",
-        ...authHeaders(),
-      },
-      body: JSON.stringify({ type: "text", content: text }),
-    });
+    const doStream = () =>
+      fetch(`${API_BASE_URL}/chat/sessions/${sessionId}/messages/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+          ...authHeaders(),
+        },
+        body: JSON.stringify({ type: "text", content: text }),
+      });
+
+    let res = await doStream();
+
+    if (res.status === 401) {
+      const ok = await tryRefresh();
+      if (ok) {
+        res = await doStream();
+      } else {
+        if (typeof window !== "undefined") window.location.href = "/login";
+        throw new Error("인증이 만료됐어요. 다시 로그인해 주세요.");
+      }
+    }
 
     if (!res.ok || !res.body) {
       const body = await res.json().catch(() => ({}));

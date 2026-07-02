@@ -5,8 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import PlatformPicker from "@/components/announcement/PlatformPicker";
 import ExportFormatPicker from "@/components/announcement/ExportFormatPicker";
-import { CheckCircleIcon, DownloadIcon } from "@/components/ui/Icons";
-import type { PlatformId, AnnouncementDraft } from "@/lib/types";
+import { CheckCircleIcon, DownloadIcon, GlobeIcon } from "@/components/ui/Icons";
+import type { PlatformId, AnnouncementDraft, CustomPlatformConfig } from "@/lib/types";
 import { PLATFORMS } from "@/lib/constants";
 
 const MOCK_DRAFT: AnnouncementDraft = {
@@ -19,13 +19,14 @@ const MOCK_DRAFT: AnnouncementDraft = {
     species: "dog",
     breed: "믹스견",
     gender: "male",
-    estimatedAge: "약 3살",
-    weight: "5kg",
-    color: "갈색",
+    estimatedAge: { value: 3, unit: "년" },
+    weightKg: 5,
+    appearance: "갈색 단모, 중형견",
     healthConditions: ["슬개골 탈구 2기", "심장사상충 음성"],
     neutered: false,
-    rescueLocation: "OO동",
-    rescueDate: "5/18",
+    rescueRegion: "OO동",
+    rescueDate: "2026-05-18",
+    shelterContact: "010-0000-0000",
   },
 };
 
@@ -37,8 +38,14 @@ function PublishContent() {
   const [platformPickerOpen, setPlatformPickerOpen] = useState(false);
   const [exportPickerOpen, setExportPickerOpen] = useState(false);
   const [platformId, setPlatformId] = useState<PlatformId | undefined>();
+  const [customConfig, setCustomConfig] = useState<CustomPlatformConfig | undefined>();
 
   const platform = PLATFORMS.find((p) => p.id === platformId);
+
+  function handlePlatformSelect(id: PlatformId, custom?: CustomPlatformConfig) {
+    setPlatformId(id);
+    setCustomConfig(custom);
+  }
 
   return (
     <div className="flex flex-col h-full min-h-screen bg-surface-50">
@@ -64,9 +71,13 @@ function PublishContent() {
           <div className="w-[58px] h-[58px] rounded-[14px] bg-gradient-to-br from-[#e7d6c0] to-[#cbae89] shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[15px] font-extrabold text-brand-800 truncate">
-              갈색 믹스견, {petName}
+              {MOCK_DRAFT.petInfo.breed ?? MOCK_DRAFT.petInfo.species}, {petName}
             </p>
-            <p className="text-[12px] text-brand-400 mt-0.5">수컷 · 3살 · 5kg</p>
+            <p className="text-[12px] text-brand-400 mt-0.5">
+              {MOCK_DRAFT.petInfo.gender === "male" ? "수컷" : MOCK_DRAFT.petInfo.gender === "female" ? "암컷" : "미상"}
+              {MOCK_DRAFT.petInfo.estimatedAge ? ` · ${MOCK_DRAFT.petInfo.estimatedAge.value}${MOCK_DRAFT.petInfo.estimatedAge.unit}` : ""}
+              {MOCK_DRAFT.petInfo.weightKg != null ? ` · ${MOCK_DRAFT.petInfo.weightKg}kg` : ""}
+            </p>
           </div>
           <div className="bg-green-100 rounded-[10px] px-2.5 py-1.5 shrink-0">
             <span className="text-[11px] font-bold text-green-700">게시중</span>
@@ -80,13 +91,22 @@ function PublishContent() {
             className="w-full flex items-center justify-between p-3.5 rounded-[18px] border border-brand-100 bg-surface-50 hover:bg-brand-50 transition-colors"
           >
             <div className="flex items-center gap-2.5">
-              <span className="text-xl">{platform ? platform.emoji : "🌐"}</span>
+              <div className="text-brand-400">
+                {platform
+                  ? <platform.icon size={20} color="currentColor" />
+                  : <GlobeIcon size={20} color="currentColor" />}
+              </div>
               <div className="text-left">
                 <p className="text-[13px] font-bold text-brand-700">
                   {platform ? platform.name : "플랫폼 선택"}
                 </p>
-                {platform && (
+                {platform && platformId !== "custom" && (
                   <p className="text-[11px] text-brand-400">{platform.toneLabel} · {platform.imageSize.label}</p>
+                )}
+                {platformId === "custom" && customConfig && (
+                  <p className="text-[11px] text-brand-400">
+                    {customConfig.imageRatio} · {customConfig.toneDescription}
+                  </p>
                 )}
               </div>
             </div>
@@ -124,7 +144,7 @@ function PublishContent() {
         open={platformPickerOpen}
         onClose={() => setPlatformPickerOpen(false)}
         selected={platformId}
-        onSelect={setPlatformId}
+        onSelect={handlePlatformSelect}
       />
 
       <ExportFormatPicker

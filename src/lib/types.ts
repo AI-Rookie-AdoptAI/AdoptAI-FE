@@ -1,3 +1,5 @@
+import type React from "react";
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 export interface User {
@@ -35,10 +37,19 @@ export type PlatformId =
 
 export type ToneStyle = "friendly" | "warm" | "formal" | "informative";
 
+export interface CustomPlatformConfig {
+  imageRatio: string;   // 예: "1:1", "16:9", "4:3"
+  imageWidth: number;
+  imageHeight: number;
+  tone: ToneStyle;
+  toneDescription: string; // 사용자가 직접 입력한 말투 설명
+}
+
 export interface Platform {
   id: PlatformId;
   name: string;
-  emoji: string;
+  /** Feather icon component for this platform */
+  icon: React.ComponentType<{ size?: number; color?: string; className?: string }>;
   imageSize: { width: number; height: number; ratio: string; label: string };
   tone: ToneStyle;
   toneLabel: string;
@@ -65,20 +76,50 @@ export type AnnouncementStatus =
   | "published"  // 게시중
   | "closed";    // 마감
 
+/**
+ * 백엔드 슬롯 스키마(adoption_slots.schema.json / slots.py)와 1:1 대응.
+ *
+ * 필수 슬롯 (8)
+ *   breed, estimatedAge, gender, neutered, weightKg,
+ *   rescueRegion, rescueDate, shelterContact
+ *
+ * 선택 슬롯 (3)
+ *   appearance, healthConditions, personalityNotes
+ *
+ * 날짜 포맷: "2026-06-30" (ISO 8601 — 백엔드가 APMS "20260630" → 변환)
+ */
+export interface EstimatedAge {
+  value: number;
+  unit: "년" | "개월";
+}
+
 export interface PetInfo {
+  // 식별
   name?: string;
-  species: string;
-  breed?: string;
-  gender: PetGender;
-  estimatedAge?: string;
+  species: string;              // "dog" | "cat" | "other"
+
+  // ── 필수 슬롯 ──────────────────────────────────────────
+  breed?: string;               // breed
+  estimatedAge?: EstimatedAge;  // estimated_age {value, unit}
+  gender: PetGender;            // sex
+  neutered?: boolean;           // is_neutered
+  weightKg?: number;            // weight_kg (kg 단위 숫자)
+  rescueRegion?: string;        // rescue_region  ← 기존 rescueLocation 대체
+  rescueDate?: string;          // rescue_date "2026-06-30"
+  shelterContact?: string;      // shelter_contact
+
+  // ── 선택 슬롯 ──────────────────────────────────────────
+  appearance?: string;          // appearance (모색/외형 특징)
+  healthConditions?: string[];  // health_conditions ["슬개골 탈구", ...]
+  personalityNotes?: string;    // personality_notes
+
+  // 레거시/호환 — UI 표시용
+  /** @deprecated weightKg 사용 권장. UI 표시용 문자열이 필요할 때만 */
   weight?: string;
-  color?: string;
-  healthConditions?: string[];
-  neutered?: boolean;
+  /** @deprecated rescueRegion 사용 권장 */
+  rescueLocation?: string;
   vaccinated?: boolean;
   characteristics?: string[];
-  rescueLocation?: string;
-  rescueDate?: string;
 }
 
 export interface AnnouncementDraft {
@@ -100,6 +141,8 @@ export interface Announcement {
   description?: string;
   photos?: string[];
   platformId?: PlatformId;
+  /** 연결된 채팅 세션 ID — draft 상태에서 대화 내역 복원에 사용 */
+  sessionId?: string;
   createdAt: string;
   updatedAt: string;
 }
