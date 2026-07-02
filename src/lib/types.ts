@@ -24,46 +24,103 @@ export interface SignupRequest {
   name: string;
 }
 
+// ─── Platform ─────────────────────────────────────────────────────────────────
+
+export type PlatformId =
+  | "instagram"
+  | "kakao"
+  | "naver_cafe"
+  | "poinhand"
+  | "custom";
+
+export type ToneStyle = "friendly" | "warm" | "formal" | "informative";
+
+export interface Platform {
+  id: PlatformId;
+  name: string;
+  emoji: string;
+  imageSize: { width: number; height: number; ratio: string; label: string };
+  tone: ToneStyle;
+  toneLabel: string;
+  description: string;
+}
+
+// ─── Export ───────────────────────────────────────────────────────────────────
+
+export type ExportFormat = "markdown" | "text" | "json" | "clipboard";
+
+export interface ExportConfig {
+  format: ExportFormat;
+  platformId?: PlatformId;
+}
+
 // ─── Pet / Announcement ───────────────────────────────────────────────────────
 
 export type PetGender = "male" | "female" | "unknown";
 export type PetSpecies = "dog" | "cat" | "other";
 
 export type AnnouncementStatus =
-  | "draft"       // 작성 중
-  | "in_review"   // 검토 대기
-  | "published"   // 최근 게시
-  | "closed";
+  | "draft"      // 작성 중
+  | "in_review"  // 검토 대기
+  | "published"  // 게시중
+  | "closed";    // 마감
 
 export interface PetInfo {
+  name?: string;
   species: string;
   breed?: string;
   gender: PetGender;
   estimatedAge?: string;
   weight?: string;
+  color?: string;
   healthConditions?: string[];
   neutered?: boolean;
   vaccinated?: boolean;
   characteristics?: string[];
+  rescueLocation?: string;
+  rescueDate?: string;
+}
+
+export interface AnnouncementDraft {
+  petName: string;
+  title: string;
+  description: string;
+  petInfo: PetInfo;
+  representativePhoto?: string;
+  platformId?: PlatformId;
+  createdAt?: string;
+  timeTaken?: string;
 }
 
 export interface Announcement {
   id: string;
   status: AnnouncementStatus;
   petInfo: PetInfo;
-  photos?: string[];
+  title?: string;
   description?: string;
+  photos?: string[];
+  platformId?: PlatformId;
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── Chat ─────────────────────────────────────────────────────────────────────
 
 export type MessageRole = "user" | "assistant";
 export type MessageType =
   | "text"
   | "voice"
-  | "image"
+  | "image_group"
   | "pet_info_card"
-  | "confirmation_question";
+  | "draft_card"
+  | "quick_chips"
+  | "fact_badge";
+
+export interface QuickChip {
+  label: string;
+  value: string;
+  selected?: boolean;
+}
 
 export interface ChatMessage {
   id: string;
@@ -71,20 +128,35 @@ export interface ChatMessage {
   type: MessageType;
   content: string;
   metadata?: {
-    voiceDuration?: number;       // seconds
-    imageUrl?: string;
+    voiceDuration?: number;
+    imageUrls?: string[];
+    aiPickIndex?: number;
+    aiConfidence?: number;
     petInfo?: PetInfo;
-    confidence?: number;          // 0–1 (AI 추천 %)
-    questionIndex?: number;
+    draft?: AnnouncementDraft;
+    chips?: QuickChip[];
+    questionKey?: string;
     totalQuestions?: number;
+    currentQuestion?: number;
   };
   createdAt: string;
 }
 
+export type ChatStage =
+  | "start"
+  | "uploading"
+  | "processing"
+  | "clarifying"
+  | "draft_ready"
+  | "editing"
+  | "publishing"
+  | "published";
+
 export interface ChatSession {
   id: string;
+  stage: ChatStage;
   announcementId?: string;
+  platformId?: PlatformId;
   messages: ChatMessage[];
-  status: "active" | "completed";
   createdAt: string;
 }

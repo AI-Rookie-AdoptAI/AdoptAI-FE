@@ -1,103 +1,250 @@
-import type { ChatMessage } from "@/lib/types";
-import PetInfoCard from "./PetInfoCard";
+import type { ChatMessage, AnnouncementDraft } from "@/lib/types";
+import { SparkleIcon, VerifiedIcon, WaveformIcon } from "@/components/ui/Icons";
 
 interface ChatBubbleProps {
   message: ChatMessage;
+  onChipSelect?: (questionKey: string, value: string) => void;
+  onPublish?: (draft: AnnouncementDraft) => void;
+  onEditDraft?: () => void;
 }
 
-export default function ChatBubble({ message }: ChatBubbleProps) {
-  const isAssistant = message.role === "assistant";
+function parseMarkdown(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part.split("\n").map((line, j, arr) => (
+      <span key={`${i}-${j}`}>{line}{j < arr.length - 1 ? <br /> : null}</span>
+    ));
+  });
+}
 
-  if (message.type === "pet_info_card" && message.metadata?.petInfo) {
-    return (
-      <div className="flex flex-col gap-2 items-start">
-        <AssistantLabel />
-        <PetInfoCard petInfo={message.metadata.petInfo} confidence={message.metadata.confidence} />
-      </div>
-    );
-  }
+export default function ChatBubble({ message, onChipSelect, onPublish, onEditDraft }: ChatBubbleProps) {
+  const { role, type, content, metadata } = message;
 
-  if (message.type === "voice") {
+  if (type === "voice") {
     return (
-      <div className={`flex ${isAssistant ? "flex-col items-start gap-1" : "justify-end"}`}>
-        {isAssistant && <AssistantLabel />}
-        <div
-          className={`flex items-center gap-2 px-4 py-3 rounded-2xl max-w-[75%] ${
-            isAssistant
-              ? "bg-surface-50 text-brand-800 rounded-tl-sm"
-              : "bg-brand-500 text-white rounded-tr-sm"
-          }`}
-        >
-          <MicIcon color={isAssistant ? "#8a5a2b" : "white"} />
-          <span className="text-[14px] font-medium">
-            음성 메모 {formatDuration(message.metadata?.voiceDuration ?? 0)}
-          </span>
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2 bg-brand-500 px-3.5 py-2.5 rounded-[20px]">
+          <WaveformIcon size={18} color="white" />
+          <span className="text-[13px] font-semibold text-white">{content}</span>
         </div>
       </div>
     );
   }
 
-  if (message.type === "confirmation_question") {
+  if (type === "image_group") {
+    const imgs = metadata?.imageUrls ?? [];
     return (
-      <div className="flex flex-col items-start gap-1">
-        <AssistantLabel />
-        <div className="bg-surface-50 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]">
-          {message.metadata?.questionIndex !== undefined && (
-            <p className="text-[11px] font-bold text-brand-300 uppercase tracking-wide mb-1.5">
-              확인이 필요해요 · {message.metadata.questionIndex + 1}/
-              {message.metadata.totalQuestions}
+      <div className="flex justify-end">
+        <div className="flex flex-col gap-1.5 items-end max-w-[300px]">
+          <div className="flex gap-1.5">
+            {imgs.slice(0, 2).map((url, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <div key={i} className="w-[58px] h-[58px] rounded-[14px] overflow-hidden bg-brand-100">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+              </div>
+            ))}
+            {imgs.length > 2 && (
+              <div className="w-[58px] h-[58px] rounded-[14px] bg-surface-100 flex items-center justify-center">
+                <span className="text-[13px] font-bold text-brand-300">+{imgs.length - 2}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (role === "user") {
+    return (
+      <div className="flex justify-end">
+        <div className="bg-brand-500 px-4 py-2.5 rounded-[20px] rounded-br-[6px] max-w-[80%]">
+          <p className="text-[14px] font-semibold text-white leading-snug">{content}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Assistant messages ──────────────────────────────────────────────────────
+
+  if (type === "text") {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-end gap-2 max-w-[90%]">
+          <AIAvatar />
+          <div className="bg-surface-50 border border-brand-75 px-4 py-3 rounded-[20px] rounded-tl-[6px]">
+            <p className="text-[14px] text-brand-700 leading-[1.55]">
+              {parseMarkdown(content)}
             </p>
-          )}
-          <p className="text-[15px] text-brand-800">{message.content}</p>
+          </div>
+        </div>
+        <FactBadge />
+      </div>
+    );
+  }
+
+  if (type === "pet_info_card" && metadata?.petInfo) {
+    const pi = metadata.petInfo;
+    const tags = [
+      pi.breed,
+      pi.estimatedAge,
+      pi.gender === "male" ? "수컷" : "암컷",
+      pi.weight,
+      pi.color,
+      ...(pi.healthConditions ?? []),
+    ].filter(Boolean) as string[];
+
+    return (
+      <div className="flex items-start gap-2 max-w-[90%]">
+        <div className="w-[30px] shrink-0" />
+        <div className="flex-1 flex flex-col gap-2">
+          <p className="text-[13.5px] text-brand-700 leading-snug">{content}</p>
+          <div className="bg-surface-50 border border-brand-75 rounded-[18px] p-[15px]">
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map((tag, i) => {
+                const isGreen = (pi.healthConditions ?? []).some(
+                  (c) => c === tag && c.includes("음성")
+                );
+                return (
+                  <span
+                    key={i}
+                    className={`px-[11px] py-[5px] rounded-[11px] text-[12px] font-semibold ${
+                      isGreen ? "bg-green-100 text-green-700" : "bg-surface-100 text-brand-450"
+                    }`}
+                  >
+                    {tag}
+                  </span>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-1.5 mt-2">
+              <VerifiedIcon size={14} color="#4e6443" />
+              <span className="text-[11.5px] font-semibold text-green-700">심장사상충 음성</span>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className={`flex ${isAssistant ? "flex-col items-start gap-1" : "justify-end"}`}>
-      {isAssistant && <AssistantLabel />}
-      <div
-        className={`px-4 py-3 rounded-2xl max-w-[80%] text-[15px] leading-relaxed ${
-          isAssistant
-            ? "bg-surface-50 text-brand-800 rounded-tl-sm"
-            : "bg-brand-500 text-white rounded-tr-sm"
-        }`}
-      >
-        {message.content}
+  if (type === "quick_chips" && metadata?.chips) {
+    return (
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-start gap-2">
+          <AIAvatar />
+          <div className="bg-surface-50 border border-brand-75 px-4 py-3.5 rounded-[20px] rounded-tl-[6px] flex flex-col gap-1">
+            <p className="text-[14px] font-bold text-brand-800">{content}</p>
+            <p className="text-[12.5px] text-brand-300">음성 메모에 없어서 확인할게요</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5 pl-[39px]">
+          {metadata.chips.map((chip) => (
+            <button
+              key={chip.value}
+              onClick={() => onChipSelect?.(metadata.questionKey!, chip.value)}
+              className="px-4 py-2.5 rounded-[18px] text-[13px] font-bold border border-brand-150 bg-surface-50 text-brand-600 hover:bg-brand-50 active:bg-brand-500 active:text-white transition-colors"
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+        <div className="pl-[39px]">
+          <FactBadge text="확실하지 않은 정보는 추측하지 않아요" />
+        </div>
       </div>
+    );
+  }
+
+  if (type === "draft_card" && metadata?.draft) {
+    return (
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-end gap-2">
+          <AIAvatar />
+          <div className="bg-surface-50 border border-brand-75 px-4 py-3 rounded-[20px] rounded-tl-[6px]">
+            <p className="text-[13.5px] text-brand-700">{content}</p>
+          </div>
+        </div>
+        <div className="pl-[39px]">
+          <DraftCard draft={metadata.draft} onPublish={onPublish} onEdit={onEditDraft} />
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function AIAvatar() {
+  return (
+    <div className="w-[30px] h-[30px] bg-brand-500 rounded-[15px] flex items-center justify-center shrink-0 self-end">
+      <SparkleIcon size={14} color="white" />
     </div>
   );
 }
 
-function AssistantLabel() {
+function FactBadge({ text = "들은 사실만 공고에 담아요" }: { text?: string }) {
   return (
-    <div className="flex items-center gap-1.5 mb-0.5">
-      <div className="w-5 h-5 bg-brand-500 rounded-md flex items-center justify-center">
-        <span className="text-[9px] text-white font-bold">AI</span>
-      </div>
-      <span className="text-[12px] font-semibold text-brand-400">입양 도우미</span>
+    <div className="flex items-center gap-1.5 bg-green-100 px-3 py-2 rounded-[12px] self-start ml-[39px]">
+      <VerifiedIcon size={14} color="#4e6443" />
+      <span className="text-[11.5px] font-semibold text-green-700">{text}</span>
     </div>
   );
 }
 
-function MicIcon({ color }: { color: string }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <rect x="9" y="2" width="6" height="11" rx="3" fill={color} />
-      <path
-        d="M5 10C5 14.4 8.1 18 12 18C15.9 18 19 14.4 19 10"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <line x1="12" y1="18" x2="12" y2="22" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
+function DraftCard({
+  draft,
+  onPublish,
+  onEdit,
+}: {
+  draft: AnnouncementDraft;
+  onPublish?: (d: AnnouncementDraft) => void;
+  onEdit?: () => void;
+}) {
+  const { petName, title, description, petInfo } = draft;
 
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+  return (
+    <div className="bg-surface-50 border border-brand-75 rounded-[20px] overflow-hidden shadow-[0_6px_16px_-8px_rgba(40,28,18,0.18)]">
+      <div className="w-full h-[180px] bg-gradient-to-br from-[#e7d6c0] to-[#cbae89] relative flex items-end p-3">
+        <span className="bg-brand-800/60 text-white text-[11px] font-semibold px-2.5 py-1 rounded-[9px]">
+          대표 사진
+        </span>
+      </div>
+
+      <div className="px-3.5 pt-[13px] pb-3.5 flex flex-col gap-2">
+        <p className="text-[16px] font-extrabold text-brand-800 leading-snug tracking-tight">{title}</p>
+        <p className="text-[12.5px] text-brand-450 leading-[1.6]">{description}</p>
+
+        <div className="border-t border-brand-25 pt-3 flex flex-col gap-2">
+          {[
+            { label: "성별 · 중성화", value: `${petInfo.gender === "male" ? "수컷" : "암컷"} · ${petInfo.neutered ? "완료" : "안 함"}` },
+            { label: "체중", value: petInfo.weight ?? "미상" },
+            { label: "건강", value: petInfo.healthConditions?.join(" · ") ?? "특이사항 없음" },
+            { label: "구조", value: `${petInfo.rescueLocation ?? ""}${petInfo.rescueDate ? ` · ${petInfo.rescueDate}` : ""}` },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex items-start justify-between gap-2">
+              <span className="text-[12.5px] text-brand-300 shrink-0">{label}</span>
+              <span className="text-[12.5px] font-semibold text-brand-700 text-right">{value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-[1fr_1.4fr] gap-2 pt-1.5">
+          <button
+            onClick={onEdit}
+            className="py-3 rounded-[14px] border border-brand-150 text-[13px] font-bold text-brand-600 hover:bg-brand-50 transition-colors"
+          >
+            수정 요청
+          </button>
+          <button
+            onClick={() => onPublish?.(draft)}
+            className="py-3 rounded-[14px] bg-brand-500 text-[14px] font-bold text-white hover:bg-brand-600 transition-colors"
+          >
+            게시하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

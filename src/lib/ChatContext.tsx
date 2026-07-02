@@ -1,0 +1,384 @@
+"use client";
+
+/**
+ * ChatContext.tsx
+ *
+ * NEXT_PUBLIC_USE_MOCK=true  → mock 시뮬레이션 (백엔드 없어도 UI 확인 가능)
+ * NEXT_PUBLIC_USE_MOCK 미설정 → 실제 백엔드 chatApi.ts 호출
+ * NEXT_PUBLIC_USE_STREAM=true → 텍스트 응답을 SSE 스트리밍으로 수신
+ */
+
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  type ReactNode,
+} from "react";
+import type { ChatMessage, ChatStage, AnnouncementDraft, PlatformId } from "./types";
+import * as api from "./chatApi";
+
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
+
+// ─── Context shape ────────────────────────────────────────────────────────────
+
+interface ChatContextValue {
+  messages: ChatMessage[];
+  stage: ChatStage;
+  isLoading: boolean;
+  platformId: PlatformId | undefined;
+  draft: AnnouncementDraft | undefined;
+  sessionId: string | undefined;
+  sendText: (text: string) => Promise<void>;
+  sendImages: (files: File[]) => Promise<void>;
+  sendVoice: (duration: number) => Promise<void>;
+  answerChip: (questionKey: string, value: string) => Promise<void>;
+  setPlatform: (id: PlatformId) => void;
+  reset: () => void;
+}
+
+const ChatContext = createContext<ChatContextValue | null>(null);
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+let _id = 0;
+function newId() {
+  return `msg-${++_id}-${Date.now()}`;
+}
+function makeMsg(partial: Omit<ChatMessage, "id" | "createdAt">): ChatMessage {
+  return { ...partial, id: newId(), createdAt: new Date().toISOString() };
+}
+
+const WELCOME: ChatMessage = makeMsg({
+  role: "assistant",
+  type: "text",
+  content:
+    "안녕하세요! 어떤 아이의 공고를 만들까요?\n구조한 아이의 **사진**과 **음성 메모**를 보내주시면 제가 정리해서 공고 초안을 만들어 드릴게요.",
+});
+
+// ─── Mock Provider ────────────────────────────────────────────────────────────
+
+function MockProvider({ children }: { children: ReactNode }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
+  const [stage, setStage] = useState<ChatStage>("start");
+  const [isLoading, setIsLoading] = useState(false);
+  const [draft, setDraft] = useState<AnnouncementDraft | undefined>();
+  const [platformId, setPlatformState] = useState<PlatformId | undefined>();
+  const answersRef = useRef<Record<string, string>>({});
+
+  const add = useCallback((...msgs: ChatMessage[]) => {
+    setMessages((prev) => [...prev, ...msgs]);
+  }, []);
+
+  const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+  const sendText = useCallback(async (text: string) => {
+    add(makeMsg({ role: "user", type: "text", content: text }));
+    setIsLoading(true);
+    await delay(900);
+    add(makeMsg({
+      role: "assistant",
+      type: "text",
+      content: "사진이나 음성 메모도 함께 보내주시면 더 정확하게 정리할 수 있어요!",
+    }));
+    setIsLoading(false);
+  }, [add]);
+
+  const sendImages = useCallback(async (files: File[]) => {
+    const urls = files.map((f) => URL.createObjectURL(f));
+    add(makeMsg({
+      role: "user",
+      type: "image_group",
+      content: `사진 ${files.length}장 전송`,
+      metadata: { imageUrls: urls, aiPickIndex: 0, aiConfidence: 92 },
+    }));
+    setIsLoading(true);
+    await delay(1200);
+    add(makeMsg({
+      role: "assistant",
+      type: "text",
+      content: "대표 사진을 골랐어요. 정면을 보고 단독으로 찍힌 사진이 입양률이 높아요.",
+    }));
+    await delay(800);
+    add(makeMsg({
+      role: "assistant",
+      type: "pet_info_card",
+      content: "들은 내용을 정리했어요",
+      metadata: {
+        petInfo: {
+          species: "dog", breed: "믹스견", gender: "male",
+          estimatedAge: "약 3살", weight: "5kg", color: "갈색",
+          healthConditions: ["슬개골 탈구 2기", "심장사상충 음성"],
+        },
+      },
+    }));
+    setStage("clarifying");
+    await delay(600);
+    add(makeMsg({
+      role: "assistant",
+      type: "quick_chips",
+      content: "중성화 수술은 했나요?",
+      metadata: {
+        questionKey: "neutered",
+        chips: [
+          { label: "했어요", value: "true" },
+          { label: "안 했어요", value: "false" },
+          { label: "모름", value: "unknown" },
+        ],
+        currentQuestion: 1,
+        totalQuestions: 2,
+      },
+    }));
+    setIsLoading(false);
+  }, [add]);
+
+  const sendVoice = useCallback(async (duration: number) => {
+    add(makeMsg({
+      role: "user",
+      type: "voice",
+      content: `음성 메모 0:${String(duration).padStart(2, "0")}`,
+      metadata: { voiceDuration: duration },
+    }));
+  }, [add]);
+
+  const answerChip = useCallback(async (questionKey: string, value: string) => {
+    const labels: Record<string, Record<string, string>> = {
+      neutered: { true: "했어요", false: "안 했어요", unknown: "모름" },
+      vaccinated: { true: "있어요", false: "없어요", unknown: "모름" },
+    };
+    answersRef.current = { ...answersRef.current, [questionKey]: value };
+    add(makeMsg({ role: "user", type: "text", content: labels[questionKey]?.[value] ?? value }));
+    setIsLoading(true);
+    await delay(400);
+
+    if (questionKey === "neutered") {
+      add(makeMsg({
+        role: "assistant",
+        type: "quick_chips",
+        content: "예방접종 기록도 있을까요?",
+        metadata: {
+          questionKey: "vaccinated",
+          chips: [
+            { label: "있어요", value: "true" },
+            { label: "없어요", value: "false" },
+          ],
+          currentQuestion: 2,
+          totalQuestions: 2,
+        },
+      }));
+    } else {
+      setStage("draft_ready");
+      const a = answersRef.current;
+      const newDraft: AnnouncementDraft = {
+        petName: "보리",
+        title: "사람을 잘 따르는 갈색 믹스견, 보리",
+        description:
+          "사람을 무척 좋아하고 잘 따르는 3살 남아예요. OO동에서 구조되었고, 건강하게 새 가족을 기다리고 있어요.",
+        petInfo: {
+          name: "보리", species: "dog", breed: "믹스견", gender: "male",
+          estimatedAge: "약 3살", weight: "5kg", color: "갈색",
+          healthConditions: ["슬개골 탈구 2기", "심장사상충 음성"],
+          neutered: a["neutered"] === "true",
+          vaccinated: a["vaccinated"] === "true",
+          rescueLocation: "OO동", rescueDate: "5/18",
+        },
+      };
+      setDraft(newDraft);
+      add(makeMsg({
+        role: "assistant",
+        type: "draft_card",
+        content: "이렇게 작성했어요. 확인 후 게시해 주세요!",
+        metadata: { draft: newDraft },
+      }));
+    }
+    setIsLoading(false);
+  }, [add]);
+
+  const reset = useCallback(() => {
+    setMessages([WELCOME]);
+    setStage("start");
+    setDraft(undefined);
+    answersRef.current = {};
+  }, []);
+
+  return (
+    <ChatContext.Provider value={{
+      messages, stage, isLoading, platformId, draft,
+      sessionId: "mock-session",
+      sendText, sendImages, sendVoice, answerChip,
+      setPlatform: setPlatformState,
+      reset,
+    }}>
+      {children}
+    </ChatContext.Provider>
+  );
+}
+
+// ─── Real API Provider ────────────────────────────────────────────────────────
+
+function ApiProvider({ children }: { children: ReactNode }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
+  const [stage, setStage] = useState<ChatStage>("start");
+  const [isLoading, setIsLoading] = useState(false);
+  const [draft, setDraft] = useState<AnnouncementDraft | undefined>();
+  const [platformId, setPlatformState] = useState<PlatformId | undefined>();
+  const [sessionId, setSessionId] = useState<string | undefined>();
+
+  // 세션 최초 생성
+  useEffect(() => {
+    api.createSession()
+      .then(setSessionId)
+      .catch((e) => console.error("[ChatContext] 세션 생성 실패:", e));
+  }, []);
+
+  const add = useCallback((...msgs: ChatMessage[]) => {
+    setMessages((prev) => [...prev, ...msgs]);
+  }, []);
+
+  const applyResult = useCallback(
+    (assistantMessages: ChatMessage[], newStage: ChatStage, newDraft?: AnnouncementDraft) => {
+      add(...assistantMessages);
+      setStage(newStage);
+      if (newDraft) setDraft(newDraft);
+    },
+    [add]
+  );
+
+  const sendText = useCallback(async (text: string) => {
+    if (!sessionId) return;
+    add(makeMsg({ role: "user", type: "text", content: text }));
+    setIsLoading(true);
+
+    const useStream = process.env.NEXT_PUBLIC_USE_STREAM === "true";
+
+    if (useStream) {
+      const tmpId = newId();
+      const tmpMsg: ChatMessage = { ...makeMsg({ role: "assistant", type: "text", content: "" }), id: tmpId };
+      add(tmpMsg);
+
+      await api.sendTextStreaming(
+        sessionId,
+        text,
+        (delta) => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === tmpId ? { ...m, content: m.content + delta } : m))
+          );
+        },
+        (result) => {
+          setMessages((prev) => prev.filter((m) => m.id !== tmpId));
+          applyResult(result.assistantMessages, result.stage, result.draft);
+          setIsLoading(false);
+        },
+        (err) => {
+          console.error("[ChatContext] 스트리밍 오류:", err);
+          setMessages((prev) => prev.filter((m) => m.id !== tmpId));
+          setIsLoading(false);
+        }
+      );
+    } else {
+      try {
+        const result = await api.sendTextMessage(sessionId, text);
+        applyResult(result.assistantMessages, result.stage, result.draft);
+      } catch (e) {
+        console.error("[ChatContext] 텍스트 전송 실패:", e);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, [sessionId, add, applyResult]);
+
+  const sendImages = useCallback(async (files: File[]) => {
+    if (!sessionId) return;
+    const urls = files.map((f) => URL.createObjectURL(f));
+    add(makeMsg({
+      role: "user", type: "image_group",
+      content: `사진 ${files.length}장 전송`,
+      metadata: { imageUrls: urls },
+    }));
+    setIsLoading(true);
+    try {
+      const result = await api.sendImages(sessionId, files);
+      applyResult(result.assistantMessages, result.stage);
+    } catch (e) {
+      console.error("[ChatContext] 이미지 전송 실패:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sessionId, add, applyResult]);
+
+  const sendVoice = useCallback(async (duration: number) => {
+    if (!sessionId) return;
+    add(makeMsg({
+      role: "user", type: "voice",
+      content: `음성 메모 0:${String(duration).padStart(2, "0")}`,
+      metadata: { voiceDuration: duration },
+    }));
+    setIsLoading(true);
+    try {
+      // TODO: 실제 MediaRecorder Blob을 받으면 여기 교체
+      const dummyBlob = new Blob([], { type: "audio/webm" });
+      const result = await api.sendVoice(sessionId, dummyBlob, duration);
+      applyResult(result.assistantMessages, result.stage, result.draft);
+    } catch (e) {
+      console.error("[ChatContext] 음성 전송 실패:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sessionId, add, applyResult]);
+
+  const answerChip = useCallback(async (questionKey: string, value: string) => {
+    if (!sessionId) return;
+    const labels: Record<string, Record<string, string>> = {
+      neutered: { true: "했어요", false: "안 했어요", unknown: "모름" },
+      vaccinated: { true: "있어요", false: "없어요", unknown: "모름" },
+    };
+    add(makeMsg({ role: "user", type: "text", content: labels[questionKey]?.[value] ?? value }));
+    setIsLoading(true);
+    try {
+      const result = await api.answerQuestion(sessionId, questionKey, value);
+      applyResult(result.assistantMessages, result.stage, result.draft);
+    } catch (e) {
+      console.error("[ChatContext] 답변 전송 실패:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sessionId, add, applyResult]);
+
+  const reset = useCallback(() => {
+    setMessages([WELCOME]);
+    setStage("start");
+    setDraft(undefined);
+    api.createSession()
+      .then(setSessionId)
+      .catch((e) => console.error("[ChatContext] 세션 재생성 실패:", e));
+  }, []);
+
+  return (
+    <ChatContext.Provider value={{
+      messages, stage, isLoading, platformId, draft, sessionId,
+      sendText, sendImages, sendVoice, answerChip,
+      setPlatform: setPlatformState,
+      reset,
+    }}>
+      {children}
+    </ChatContext.Provider>
+  );
+}
+
+// ─── Public exports ───────────────────────────────────────────────────────────
+
+export function ChatProvider({ children }: { children: ReactNode }) {
+  return USE_MOCK ? (
+    <MockProvider>{children}</MockProvider>
+  ) : (
+    <ApiProvider>{children}</ApiProvider>
+  );
+}
+
+export function useChatContext() {
+  const ctx = useContext(ChatContext);
+  if (!ctx) throw new Error("useChatContext must be used inside ChatProvider");
+  return ctx;
+}

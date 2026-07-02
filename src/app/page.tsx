@@ -1,22 +1,43 @@
 import AppHeader from "@/components/layout/AppHeader";
 import BottomNav from "@/components/layout/BottomNav";
 import AnnouncementCard from "@/components/dashboard/AnnouncementCard";
-import Button from "@/components/ui/Button";
 import Link from "next/link";
+import { SparkleIcon } from "@/components/ui/Icons";
 import type { Announcement } from "@/lib/types";
 
-const mockAnnouncements: Announcement[] = [
+const mockDraft: Announcement[] = [
   {
     id: "1",
     status: "draft",
-    petInfo: { species: "dog", breed: "믹스견", gender: "male", estimatedAge: "약 3살", weight: "5kg" },
+    title: "보리",
+    petInfo: { name: "보리", species: "dog", breed: "믹스견", gender: "male", estimatedAge: "약 3살", weight: "5kg" },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
     id: "2",
     status: "in_review",
-    petInfo: { species: "dog", breed: "푸들", gender: "female", estimatedAge: "약 2살" },
+    title: "초코",
+    petInfo: { name: "초코", species: "dog", breed: "푸들", gender: "female", estimatedAge: "약 2살" },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+const mockPublished: Announcement[] = [
+  {
+    id: "3",
+    status: "published",
+    title: "단비",
+    petInfo: { name: "단비", species: "dog", breed: "말티즈", gender: "female", estimatedAge: "약 1살" },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "4",
+    status: "published",
+    title: "호두",
+    petInfo: { name: "호두", species: "dog", breed: "시츄", gender: "male", estimatedAge: "약 4살" },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -24,43 +45,84 @@ const mockAnnouncements: Announcement[] = [
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col min-h-screen pb-[88px]">
-      <AppHeader />
+    <div className="flex flex-col h-full min-h-screen bg-surface-50">
+      <AppHeader userName="민정" />
 
-      <main className="flex-1 px-5 pt-6 flex flex-col gap-6">
-        {/* Hero CTA */}
-        <section className="bg-surface-50 rounded-3xl p-5 flex flex-col gap-3 border border-brand-100">
-          <p className="text-[17px] font-bold text-brand-800 leading-snug">
-            구조한 아이를 새 가족과<br />이어줄 시간이에요
+      <main className="flex-1 overflow-y-auto scrollbar-hide pb-[88px]">
+        {/* Greeting */}
+        <div className="px-[22px] pt-1 pb-4 flex flex-col gap-1">
+          <h1 className="text-[23px] font-extrabold text-brand-800 tracking-tight leading-tight">
+            민정님, 안녕하세요
+          </h1>
+          <p className="text-[13.5px] text-brand-400">
+            구조한 아이를 새 가족과 이어줄 시간이에요
           </p>
-          <p className="text-[13px] text-brand-400">
-            사진과 음성이면 1분이면 충분해요
-          </p>
-          <Link href="/chat">
-            <Button size="md" className="w-full mt-1">
-              새 공고 작성하기
-            </Button>
+        </div>
+
+        {/* CTA card */}
+        <div className="mx-[22px] mb-5">
+          <Link
+            href="/chat"
+            className="flex items-center justify-between bg-brand-500 rounded-[22px] p-5 shadow-[0_12px_24px_-8px_rgba(138,90,43,0.5)] hover:bg-brand-600 transition-colors"
+          >
+            <div className="flex flex-col gap-1">
+              <p className="text-[17px] font-extrabold text-white tracking-tight">
+                새 공고 작성하기
+              </p>
+              <p className="text-[12px] text-white/78">
+                사진과 음성이면 1분이면 충분해요
+              </p>
+            </div>
+            <div className="w-[46px] h-[46px] bg-white/18 rounded-[14px] flex items-center justify-center shrink-0">
+              <SparkleIcon size={22} color="white" />
+            </div>
           </Link>
+        </div>
+
+        {/* Draft section */}
+        <section className="px-[22px] mb-5">
+          <div className="flex items-center justify-between mb-2.5">
+            <h2 className="text-[13px] font-bold text-brand-600">작성 중</h2>
+            <span className="text-[12px] text-brand-300">{mockDraft.length}건</span>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {mockDraft.map((a) => (
+              <AnnouncementCard key={a.id} announcement={a} />
+            ))}
+          </div>
         </section>
 
-        {/* Announcement list */}
-        <section className="flex flex-col gap-3">
-          <h2 className="text-[13px] font-bold text-brand-300 tracking-wide uppercase">
-            작성한 공고
-          </h2>
-          {mockAnnouncements.length === 0 ? (
-            <p className="text-[14px] text-brand-300 text-center py-10">
-              아직 작성한 공고가 없어요
-            </p>
-          ) : (
-            mockAnnouncements.map((a) => (
-              <AnnouncementCard key={a.id} announcement={a} />
-            ))
-          )}
+        {/* Published section */}
+        <section className="px-[22px]">
+          <h2 className="text-[13px] font-bold text-brand-600 mb-2.5">최근 게시</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {mockPublished.map((a) => (
+              <AnnouncementGridCard key={a.id} announcement={a} />
+            ))}
+          </div>
         </section>
       </main>
 
       <BottomNav />
     </div>
+  );
+}
+
+function AnnouncementGridCard({ announcement }: { announcement: Announcement }) {
+  const gradients = [
+    "from-[#eadccb] to-[#d6c1a6]",
+    "from-[#e8e0d0] to-[#cfbe9e]",
+    "from-[#e7d6c0] to-[#cbae89]",
+    "from-[#e6dcc8] to-[#d2b891]",
+  ];
+  const idx = parseInt(announcement.id) % gradients.length;
+
+  return (
+    <Link href={`/announcements/${announcement.id}`} className="flex flex-col gap-1.5">
+      <div className={`aspect-square rounded-[16px] bg-gradient-to-br ${gradients[idx]}`} />
+      <p className="text-[13px] font-bold text-brand-800">
+        {announcement.petInfo.name ?? announcement.petInfo.breed}
+      </p>
+    </Link>
   );
 }

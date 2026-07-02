@@ -19,8 +19,12 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko" className="h-full">
-      <body className="min-h-full bg-brand-50 font-pretendard antialiased">
-        <AuthProvider>{children}</AuthProvider>
+      <body className="min-h-full bg-brand-50 font-pretendard antialiased web-app-root">
+        <AuthProvider>
+          <div className="mobile-shell">
+            {children}
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

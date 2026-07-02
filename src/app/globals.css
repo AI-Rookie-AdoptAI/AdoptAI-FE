@@ -10,21 +10,28 @@
   --color-brand-700: #3a2e22;
   --color-brand-600: #5a4a3a;
   --color-brand-500: #8a5a2b;
+  --color-brand-450: #6b5b49;
   --color-brand-400: #8a7a68;
+  --color-brand-350: #a89882;
   --color-brand-300: #9a8b7c;
   --color-brand-200: #cbb9a3;
+  --color-brand-150: #e0d5c6;
   --color-brand-100: #e4d8c8;
+  --color-brand-75: #efe5d8;
   --color-brand-50: #ebe1d4;
-  --color-brand-25: #efe5d8;
+  --color-brand-25: #f0e7da;
 
   /* Surface (Cream/Beige) */
   --color-surface-200: #f3ede4;
+  --color-surface-150: #f3ede4;
   --color-surface-100: #f3eadf;
   --color-surface-50: #fbf7f1;
 
   /* Green (Positive/Yes indicator) */
   --color-green-700: #4e6443;
+  --color-green-600: #6f8a5f;
   --color-green-500: #6f8a5f;
+  --color-green-100: #e8eee2;
 
   /* Font family */
   --font-pretendard: "Pretendard Variable", Pretendard, -apple-system,
@@ -42,4 +49,39 @@ body {
   font-family: var(--font-pretendard);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Web-app mobile shell centering */
+.mobile-shell {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+  background: #fbf7f1;
+}
+
+@media (min-width: 768px) {
+  .web-app-root {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100dvh;
+    background: #ebe1d4;
+    padding: 40px 0;
+  }
+  .mobile-shell {
+    border-radius: 48px;
+    box-shadow: 0 24px 80px -12px rgba(40, 28, 18, 0.35);
+    min-height: auto;
+    height: 812px;
+    overflow: hidden;
+  }
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
