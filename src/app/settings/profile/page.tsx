@@ -4,6 +4,7 @@ import { useState } from "react";
 import SettingsHeader from "@/components/settings/SettingsHeader";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { CheckIcon } from "@/components/ui/Icons";
 import { useAuth } from "@/lib/AuthContext";
 
 export default function ProfilePage() {
@@ -117,7 +118,12 @@ export default function ProfilePage() {
             className="w-full"
             disabled={loading}
           >
-            {saved ? "저장됐어요 ✓" : loading ? "저장 중…" : "저장하기"}
+            {saved ? (
+              <span className="inline-flex items-center gap-1.5">
+                <CheckIcon size={16} color="currentColor" />
+                저장됐어요
+              </span>
+            ) : loading ? "저장 중…" : "저장하기"}
           </Button>
         </form>
       </main>

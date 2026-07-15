@@ -20,7 +20,7 @@ export default function ChatWindow() {
   const isTyping = isLoading || stage === "uploading" || stage === "processing";
 
   function handlePublish(draft: AnnouncementDraft) {
-    router.push(`/chat/publish?petName=${encodeURIComponent(draft.petName)}`);
+    router.push(`/chat/platform?petName=${encodeURIComponent(draft.petName)}`);
   }
 
   function handleEditDraft() {

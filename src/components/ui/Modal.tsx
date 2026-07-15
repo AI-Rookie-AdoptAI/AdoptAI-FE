@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { XIcon } from "@/components/ui/Icons";
+import { useEscapeKey } from "@/lib/hooks";
 
 interface ModalProps {
   open: boolean;
@@ -11,12 +11,7 @@ interface ModalProps {
 }
 
 export default function Modal({ open, onClose, children, title }: ModalProps) {
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  useEscapeKey(open, onClose);
 
   if (!open) return null;
 

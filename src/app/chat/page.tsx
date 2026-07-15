@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChatProvider, useChatContext } from "@/lib/ChatContext";
 import ChatWindow from "@/components/chat/ChatWindow";
-import { PawIcon, ChevronLeftIcon, MoreHorizIcon } from "@/components/ui/Icons";
+import { AppIcon, ChevronLeftIcon, MoreHorizIcon } from "@/components/ui/Icons";
 import Link from "next/link";
 
 export default function ChatPage() {
@@ -49,14 +49,14 @@ function ChatPageInner() {
       <header className="flex items-center gap-2.5 px-[18px] pt-[52px] pb-3 bg-surface-50 border-b border-brand-75 shrink-0">
         <Link
           href="/"
-          className="w-6 h-6 flex items-center justify-center text-brand-450 hover:text-brand-600 transition-colors"
+          className="w-6 h-6 flex items-center justify-center text-brand-500 hover:text-brand-600 transition-colors"
           aria-label="뒤로 가기"
         >
           <ChevronLeftIcon size={24} color="currentColor" />
         </Link>
 
-        <div className="w-[38px] h-[38px] bg-brand-500 rounded-[19px] flex items-center justify-center shrink-0">
-          <PawIcon size={20} color="white" />
+        <div className="w-[38px] h-[38px] rounded-[19px] overflow-hidden shrink-0">
+          <AppIcon size={38} />
         </div>
 
         <div className="flex-1 min-w-0">

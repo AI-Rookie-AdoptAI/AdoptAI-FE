@@ -3,6 +3,8 @@
 import Link from "next/link";
 import AppHeader from "@/components/layout/AppHeader";
 import BottomNav from "@/components/layout/BottomNav";
+import Section from "@/components/ui/Section";
+import ListItem from "@/components/ui/ListItem";
 import { useAuth } from "@/lib/AuthContext";
 import { ChevronRightIcon, UserIcon, GlobeIcon, BellIcon, HelpCircleIcon } from "@/components/ui/Icons";
 import type { ComponentType } from "react";
@@ -23,11 +25,11 @@ export default function SettingsPage() {
     <div className="flex flex-col min-h-screen bg-surface-50">
       <AppHeader userName={user?.name} />
 
-      <main className="flex-1 overflow-y-auto scrollbar-hide pb-[88px] px-[22px] pt-2">
+      <main className="flex-1 overflow-y-auto scrollbar-hide pb-[88px] px-[22px] pt-2 flex flex-col gap-5">
         {/* 프로필 요약 카드 */}
-        <Link href="/settings/profile" className="flex items-center gap-3.5 bg-surface-50 border border-brand-75 rounded-[20px] p-4 mb-5 hover:bg-brand-50 transition-colors">
-          <div className="w-12 h-12 rounded-full bg-surface-100 flex items-center justify-center shrink-0">
-            <span className="text-[20px] font-bold text-brand-500">
+        <Link href="/settings/profile" className="flex items-center gap-3.5 bg-surface-50 border border-brand-75 rounded-2xl p-4 hover:bg-brand-50 transition-colors">
+          <div className="w-12 h-12 rounded-2xl bg-accent-100 flex items-center justify-center shrink-0">
+            <span className="text-[20px] font-bold text-accent-600">
               {user?.name?.slice(0, 1) ?? "민"}
             </span>
           </div>
@@ -41,33 +43,27 @@ export default function SettingsPage() {
         </Link>
 
         {/* 메뉴 목록 */}
-        <div className="flex flex-col gap-2">
+        <Section>
           {MENU.map(({ href, label, desc, Icon }) => (
-            <Link
+            <ListItem
               key={href}
               href={href}
-              className="flex items-center gap-3.5 bg-surface-50 border border-brand-75 rounded-[18px] px-4 py-3.5 hover:bg-brand-50 transition-colors"
-            >
-              <div className="w-9 h-9 rounded-[12px] bg-surface-100 flex items-center justify-center shrink-0 text-brand-500">
-                <Icon size={18} color="currentColor" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold text-brand-800">{label}</p>
-                <p className="text-[12px] text-brand-400 mt-0.5">{desc}</p>
-              </div>
-              <ChevronRightIcon size={20} color="#cbb9a3" />
-            </Link>
+              title={label}
+              description={desc}
+              icon={<Icon size={18} color="currentColor" />}
+            />
           ))}
-        </div>
+        </Section>
 
-        {/* 로그아웃 */}
-        <button
-          onClick={() => logout()}
-          className="w-full mt-5 py-3.5 rounded-[18px] border border-brand-100 text-[14px] font-bold text-brand-400 hover:bg-brand-50 transition-colors"
-        >
-          로그아웃
-        </button>
-        <p className="text-center text-[11px] text-brand-200 mt-4">AdoptAI v0.1.0</p>
+        <div className="flex flex-col gap-4">
+          <button
+            onClick={() => logout()}
+            className="w-full py-3.5 rounded-2xl border border-brand-100 text-[14px] font-bold text-brand-400 hover:bg-brand-50 transition-colors"
+          >
+            로그아웃
+          </button>
+          <p className="text-center text-[11px] text-brand-200">AdoptAI v0.1.0</p>
+        </div>
       </main>
 
       <BottomNav />

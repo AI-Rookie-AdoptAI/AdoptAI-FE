@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Platform, PlatformId, ToneStyle, CustomPlatformConfig } from "@/lib/types";
 import { PLATFORMS } from "@/lib/constants";
 import Modal from "@/components/ui/Modal";
-import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/Icons";
+import { ChevronLeftIcon, ChevronRightIcon, CheckIcon } from "@/components/ui/Icons";
 
 interface PlatformPickerProps {
   open: boolean;
@@ -139,9 +139,7 @@ export default function PlatformPicker({ open, onClose, selected, onSelect }: Pl
                   </div>
                   {customTone === t.value && (
                     <div className="w-4 h-4 rounded-full bg-brand-500 flex items-center justify-center shrink-0">
-                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                        <path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <CheckIcon size={9} color="white" />
                     </div>
                   )}
                 </button>
@@ -186,26 +184,31 @@ function PlatformCard({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const disabled = platform.disabled;
   return (
     <button
       onClick={onSelect}
+      disabled={disabled}
       className={`w-full text-left flex items-start gap-3.5 p-3.5 rounded-[18px] border transition-colors ${
-        selected
-          ? "border-brand-500 bg-brand-50"
-          : "border-brand-100 bg-surface-50 hover:bg-brand-50"
+        disabled
+          ? "border-brand-100 bg-surface-100 opacity-60 cursor-not-allowed"
+          : selected
+            ? "border-brand-500 bg-brand-50"
+            : "border-brand-100 bg-surface-50 hover:bg-brand-50"
       }`}
     >
-      <div className={`shrink-0 mt-0.5 ${selected ? "text-brand-500" : "text-brand-400"}`}>
+      <div className={`shrink-0 mt-0.5 ${disabled ? "text-brand-300" : selected ? "text-brand-500" : "text-brand-400"}`}>
         <platform.icon size={22} color="currentColor" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[14px] font-bold text-brand-800">{platform.name}</p>
+          <p className={`text-[14px] font-bold ${disabled ? "text-brand-300" : "text-brand-800"}`}>
+            {platform.name}
+            {disabled && <span className="ml-1.5 text-[11px] font-semibold text-brand-300">(준비 중)</span>}
+          </p>
           {selected ? (
             <div className="w-4 h-4 rounded-full bg-brand-500 flex items-center justify-center shrink-0">
-              <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                <path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <CheckIcon size={9} color="white" />
             </div>
           ) : platform.id === "custom" ? (
             <ChevronRightIcon size={16} color="#cbb9a3" />

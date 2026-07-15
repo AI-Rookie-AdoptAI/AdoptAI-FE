@@ -17,7 +17,9 @@ export function middleware(request: NextRequest) {
 
   if (isPublic && token) {
     const next = request.nextUrl.searchParams.get("next") ?? "/";
-    return NextResponse.redirect(new URL(next, request.url));
+    // 오픈 리다이렉트 방지: "/"로 시작하고 "//"(프로토콜 상대 URL)가 아닌 경로만 허용
+    const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+    return NextResponse.redirect(new URL(safeNext, request.url));
   }
 
   return NextResponse.next();

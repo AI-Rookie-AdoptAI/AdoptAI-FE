@@ -2,15 +2,23 @@ import type { AnnouncementStatus, Platform, ExportFormat } from "./types";
 import type { ComponentType } from "react";
 import {
   InstagramIcon,
-  MessageCircleIcon,
+  StoreIcon,
   CoffeeIcon,
-  HeartIcon,
+  PetsIcon,
   SlidersIcon,
   FileTextIcon,
   FileIcon,
   CodeIcon,
   ClipboardIcon,
 } from "@/components/ui/Icons";
+
+/** 대표 사진이 없을 때 카드에 쓰는 플레이스홀더 그라데이션 — hashIndex(id, length)로 골라요 */
+export const PET_PHOTO_GRADIENTS = [
+  "from-[#eadccb] to-[#d6c1a6]",
+  "from-[#e8e0d0] to-[#cfbe9e]",
+  "from-[#e7d6c0] to-[#cbae89]",
+  "from-[#e6dcc8] to-[#d2b891]",
+];
 
 export const ANNOUNCEMENT_STATUS_LABEL: Record<AnnouncementStatus, string> = {
   draft: "작성 중",
@@ -33,35 +41,36 @@ export const PLATFORMS: Platform[] = [
     icon: InstagramIcon,
     imageSize: { width: 1080, height: 1080, ratio: "1:1", label: "정사각형 1080×1080" },
     tone: "friendly",
-    toneLabel: "감성적·친근한",
+    toneLabel: "감성적 짧은 글 · 해시태그",
     description: "해시태그 최적화, 짧고 감성적인 문체",
   },
   {
-    id: "kakao",
-    name: "카카오 오픈채팅",
-    icon: MessageCircleIcon,
-    imageSize: { width: 1200, height: 675, ratio: "16:9", label: "가로형 1200×675" },
+    id: "danggeun",
+    name: "당근 동네생활",
+    icon: StoreIcon,
+    imageSize: { width: 1200, height: 900, ratio: "4:3", label: "가로형 1200×900" },
     tone: "warm",
-    toneLabel: "따뜻하고 일상적인",
+    toneLabel: "친근한 존댓말 · 동네 강조",
     description: "이웃에게 말하듯 편안한 말투",
   },
   {
     id: "naver_cafe",
     name: "네이버 카페",
     icon: CoffeeIcon,
-    imageSize: { width: 800, height: 600, ratio: "4:3", label: "표준 800×600" },
+    imageSize: { width: 1000, height: 1250, ratio: "4:5", label: "세로형 1000×1250" },
     tone: "informative",
-    toneLabel: "정보 중심·체계적인",
+    toneLabel: "정보 중심 · 격식체 긴 글",
     description: "정보 위주, 표 형식 건강 정보 포함",
   },
   {
-    id: "poinhand",
-    name: "포인핸드",
-    icon: HeartIcon,
-    imageSize: { width: 800, height: 800, ratio: "1:1", label: "정사각형 800×800" },
+    id: "stray_animal",
+    name: "유기동물 공고",
+    icon: PetsIcon,
+    imageSize: { width: 0, height: 0, ratio: "표", label: "항목 표 형식" },
     tone: "formal",
-    toneLabel: "공식·정확한",
+    toneLabel: "항목 표 · 공식 톤",
     description: "입양 플랫폼 표준 양식, 항목별 기재",
+    disabled: true,
   },
   {
     id: "custom",

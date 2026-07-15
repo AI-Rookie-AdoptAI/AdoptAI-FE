@@ -11,6 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import type { User, LoginRequest, SignupRequest } from "./types";
 import {
+  apiGetMe,
   apiLogin,
   apiLogout,
   apiSignup,

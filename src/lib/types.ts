@@ -30,9 +30,9 @@ export interface SignupRequest {
 
 export type PlatformId =
   | "instagram"
-  | "kakao"
+  | "danggeun"
   | "naver_cafe"
-  | "poinhand"
+  | "stray_animal"
   | "custom";
 
 export type ToneStyle = "friendly" | "warm" | "formal" | "informative";
@@ -54,6 +54,8 @@ export interface Platform {
   tone: ToneStyle;
   toneLabel: string;
   description: string;
+  /** 아직 지원하지 않는 플랫폼 — 선택 목록에서 비활성으로 표시돼요 */
+  disabled?: boolean;
 }
 
 // ─── Export ───────────────────────────────────────────────────────────────────

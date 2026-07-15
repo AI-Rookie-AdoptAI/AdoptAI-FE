@@ -33,7 +33,7 @@ interface ChatContextValue {
   sessionId: string | undefined;
   sendText: (text: string) => Promise<void>;
   sendImages: (files: File[]) => Promise<void>;
-  sendVoice: (duration: number) => Promise<void>;
+  sendVoice: (file: File, durationSec: number) => Promise<void>;
   answerChip: (questionKey: string, value: string) => Promise<void>;
   setPlatform: (id: PlatformId) => void;
   reset: () => void;
@@ -158,7 +158,7 @@ function MockProvider({ children, initialSessionId }: { children: ReactNode; ini
     setIsLoading(false);
   }, [add]);
 
-  const sendVoice = useCallback(async (duration: number) => {
+  const sendVoice = useCallback(async (_file: File, duration: number) => {
     add(makeMsg({
       role: "user",
       type: "voice",
@@ -248,7 +248,7 @@ function MockProvider({ children, initialSessionId }: { children: ReactNode; ini
 function ApiProvider({ children, initialSessionId }: { children: ReactNode; initialSessionId?: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [stage, setStage] = useState<ChatStage>("start");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!initialSessionId);
   const [draft, setDraft] = useState<AnnouncementDraft | undefined>();
   const [platformId, setPlatformState] = useState<PlatformId | undefined>();
   const [sessionId, setSessionId] = useState<string | undefined>(initialSessionId);
@@ -256,7 +256,6 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
   // 세션 초기화: initialSessionId가 있으면 메시지 복원, 없으면 새 세션 생성
   useEffect(() => {
     if (initialSessionId) {
-      setIsLoading(true);
       api.fetchMessages(initialSessionId)
         .then((msgs) => {
           if (msgs.length > 0) setMessages(msgs);
@@ -348,7 +347,7 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
     }
   }, [sessionId, add, applyResult]);
 
-  const sendVoice = useCallback(async (duration: number) => {
+  const sendVoice = useCallback(async (file: File, duration: number) => {
     if (!sessionId) return;
     add(makeMsg({
       role: "user", type: "voice",
@@ -357,9 +356,7 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
     }));
     setIsLoading(true);
     try {
-      // TODO: 실제 MediaRecorder Blob을 받으면 여기 교체
-      const dummyBlob = new Blob([], { type: "audio/webm" });
-      const result = await api.sendVoice(sessionId, dummyBlob, duration);
+      const result = await api.sendVoice(sessionId, file, duration);
       applyResult(result.assistantMessages, result.stage, result.draft);
     } catch (e) {
       console.error("[ChatContext] 음성 전송 실패:", e);
