@@ -27,7 +27,7 @@ export default function ChatWindow() {
     const result = await publish();
     if (result) {
       router.push(
-        `/chat/publish?petName=${encodeURIComponent(draft.petName)}&announcementId=${result.announcementId}&timeTaken=${encodeURIComponent(result.timeTaken)}`
+        `/chat/platform?petName=${encodeURIComponent(draft.petName)}&announcementId=${result.announcementId}&timeTaken=${encodeURIComponent(result.timeTaken)}`
       );
     }
   }
@@ -55,7 +55,6 @@ export default function ChatWindow() {
         ref={containerRef}
         className="flex-1 overflow-y-auto scrollbar-hide px-[18px] pt-4 pb-2 flex flex-col gap-3.5"
       >
-        {/* timestamp */}
         <div className="flex justify-center">
           <span className="text-[11px] font-semibold text-brand-200">오늘 오후 2:14</span>
         </div>

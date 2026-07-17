@@ -1,5 +1,6 @@
 import type { ChatMessage, AnnouncementDraft } from "@/lib/types";
 import { SparkleIcon, VerifiedIcon, WaveformIcon } from "@/components/ui/Icons";
+import Tag from "@/components/ui/Tag";
 
 interface ChatBubbleProps {
   message: ChatMessage;
@@ -41,8 +42,8 @@ export default function ChatBubble({ message, onChipSelect, onPublish, onEditDra
         <div className="flex flex-col gap-1.5 items-end max-w-[300px]">
           <div className="flex gap-1.5">
             {imgs.slice(0, 2).map((url, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
               <div key={i} className="w-[58px] h-[58px] rounded-[14px] overflow-hidden bg-brand-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" className="w-full h-full object-cover" />
               </div>
             ))}
@@ -107,22 +108,13 @@ export default function ChatBubble({ message, onChipSelect, onPublish, onEditDra
         <div className="w-[30px] shrink-0" />
         <div className="flex-1 flex flex-col gap-2">
           <p className="text-[13.5px] text-brand-700 leading-snug">{content}</p>
-          <div className="bg-surface-50 border border-brand-75 rounded-[18px] p-[15px]">
+          <div className="bg-surface-50 border border-brand-75 rounded-2xl p-[15px]">
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag, i) => {
                 const isGreen = (pi.healthConditions ?? []).some(
                   (c) => c === tag && c.includes("음성")
                 );
-                return (
-                  <span
-                    key={i}
-                    className={`px-[11px] py-[5px] rounded-[11px] text-[12px] font-semibold ${
-                      isGreen ? "bg-green-100 text-green-700" : "bg-surface-100 text-brand-450"
-                    }`}
-                  >
-                    {tag}
-                  </span>
-                );
+                return <Tag key={i} label={tag} size="md" tone={isGreen ? "success" : "neutral"} />;
               })}
             </div>
             {/* 검사 음성 태그가 있을 때만 verified 배지 표시 */}
@@ -153,7 +145,7 @@ export default function ChatBubble({ message, onChipSelect, onPublish, onEditDra
             <button
               key={chip.value}
               onClick={() => onChipSelect?.(metadata.questionKey!, chip.value)}
-              className="px-4 py-2.5 rounded-[18px] text-[13px] font-bold border border-brand-150 bg-surface-50 text-brand-600 hover:bg-brand-50 active:bg-brand-500 active:text-white transition-colors"
+              className="px-4 py-2.5 rounded-full text-[13px] font-bold border border-brand-150 bg-surface-50 text-brand-600 hover:bg-brand-50 active:bg-brand-500 active:text-white transition-colors"
             >
               {chip.label}
             </button>
@@ -211,12 +203,12 @@ function DraftCard({
   onPublish?: (d: AnnouncementDraft) => void;
   onEdit?: () => void;
 }) {
-  const { petName, title, description, petInfo } = draft;
+  const { title, description, petInfo } = draft;
 
   return (
     <div className="bg-surface-50 border border-brand-75 rounded-[20px] overflow-hidden shadow-[0_6px_16px_-8px_rgba(40,28,18,0.18)]">
       <div className="w-full h-[180px] bg-gradient-to-br from-[#e7d6c0] to-[#cbae89] relative flex items-end p-3">
-        <span className="bg-brand-800/60 text-white text-[11px] font-semibold px-2.5 py-1 rounded-[9px]">
+        <span className="bg-brand-800/60 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg">
           대표 사진
         </span>
       </div>
@@ -251,15 +243,15 @@ function DraftCard({
         <div className="grid grid-cols-[1fr_1.4fr] gap-2 pt-1.5">
           <button
             onClick={onEdit}
-            className="py-3 rounded-[14px] border border-brand-150 text-[13px] font-bold text-brand-600 hover:bg-brand-50 transition-colors"
+            className="py-3 rounded-xl border border-brand-150 text-[13px] font-bold text-brand-600 hover:bg-brand-50 transition-colors"
           >
             수정 요청
           </button>
           <button
             onClick={() => onPublish?.(draft)}
-            className="py-3 rounded-[14px] bg-brand-500 text-[14px] font-bold text-white hover:bg-brand-600 transition-colors"
+            className="py-3 rounded-xl bg-accent-500 text-[14px] font-extrabold text-brand-800 hover:bg-accent-600 transition-colors"
           >
-            게시하기
+            플랫폼 선택
           </button>
         </div>
       </div>

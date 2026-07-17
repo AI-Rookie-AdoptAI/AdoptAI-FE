@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ChevronLeftIcon, DownloadIcon, EditIcon, GlobeIcon, TargetIcon } from "@/components/ui/Icons";
+import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, EditIcon, GlobeIcon, TargetIcon } from "@/components/ui/Icons";
 import Badge from "@/components/ui/Badge";
 import PlatformPicker from "@/components/announcement/PlatformPicker";
 import ExportFormatPicker from "@/components/announcement/ExportFormatPicker";
@@ -79,8 +79,8 @@ export default function AnnouncementDetailPage() {
           sessionId={sessionId}
         />
         <div className="flex-1 flex flex-col items-center justify-center px-8 gap-4 pb-20">
-          <div className="w-16 h-16 rounded-2xl bg-surface-100 flex items-center justify-center">
-            <span className="text-3xl">✍️</span>
+          <div className="w-16 h-16 rounded-2xl bg-surface-100 flex items-center justify-center text-brand-300">
+            <EditIcon size={26} color="currentColor" />
           </div>
           <p className="text-[16px] font-extrabold text-brand-800 text-center">아직 작성 중이에요</p>
           <p className="text-[13.5px] text-brand-400 text-center leading-relaxed">
@@ -181,7 +181,10 @@ export default function AnnouncementDetailPage() {
                   )}
                 </div>
               </div>
-              <span className="text-[12px] text-brand-300">변경 →</span>
+              <span className="flex items-center gap-0.5 text-[12px] text-brand-300">
+                변경
+                <ChevronRightIcon size={14} color="currentColor" />
+              </span>
             </button>
           </div>
 
@@ -228,7 +231,7 @@ function PageHeader({
 }) {
   return (
     <header className="flex items-center gap-3 px-[18px] pt-[52px] pb-3 bg-surface-50 border-b border-brand-75 shrink-0">
-      <Link href="/announcements" className="text-brand-450 hover:text-brand-600 transition-colors">
+      <Link href="/announcements" className="text-brand-500 hover:text-brand-600 transition-colors">
         <ChevronLeftIcon size={24} color="currentColor" />
       </Link>
       <div className="flex-1 min-w-0">

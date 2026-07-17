@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import Banner from "@/components/ui/Banner";
 
 export default function LoginForm() {
   const { login, loading, error, clearError } = useAuth();
@@ -33,9 +34,11 @@ export default function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {isMock && (
-        <div className="bg-surface-100 border border-brand-100 rounded-xl px-4 py-3 text-[12.5px] text-brand-450">
-          <span className="font-bold text-brand-500">개발 모드</span> — 아무 이메일/비밀번호나 입력하면 로그인됩니다
-        </div>
+        <Banner
+          tone="neutral"
+          title="개발 모드"
+          description="아무 이메일/비밀번호나 입력하면 로그인됩니다"
+        />
       )}
       <Input
         label="이메일"

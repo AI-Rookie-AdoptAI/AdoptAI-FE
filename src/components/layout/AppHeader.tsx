@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PawIcon } from "@/components/ui/Icons";
+import { AppIcon } from "@/components/ui/Icons";
 
 interface AppHeaderProps {
   userName?: string;
@@ -11,8 +11,8 @@ export default function AppHeader({ userName }: AppHeaderProps) {
   return (
     <header className="flex items-center justify-between px-[22px] pt-4 pb-3.5 bg-surface-50">
       <Link href="/" className="flex items-center gap-2.5">
-        <div className="w-8 h-8 bg-brand-500 rounded-[10px] flex items-center justify-center shrink-0">
-          <PawIcon size={18} color="white" />
+        <div className="w-8 h-8 rounded-[10px] overflow-hidden shrink-0">
+          <AppIcon size={32} />
         </div>
         <span className="text-[19px] font-extrabold text-brand-800 tracking-tight leading-none">
           AdoptAI

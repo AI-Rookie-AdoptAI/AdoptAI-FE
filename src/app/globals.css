@@ -31,7 +31,17 @@
   --color-green-700: #4e6443;
   --color-green-600: #6f8a5f;
   --color-green-500: #6f8a5f;
+  --color-green-400: #8fb27c;
   --color-green-100: #e8eee2;
+
+  /* Accent (CTA orange — dialog/sheet/progress/toast overlay system) */
+  --color-accent-600: #c57c2c;
+  --color-accent-500: #e7a24a;
+  --color-accent-100: #fbeee0;
+
+  /* Destructive (delete/remove confirmations) */
+  --color-destructive-500: #b5504a;
+  --color-destructive-100: #f6e4e1;
 
   /* Font family */
   --font-pretendard: "Pretendard Variable", Pretendard, -apple-system,
@@ -49,13 +59,6 @@ body {
   font-family: var(--font-pretendard);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Web-app full layout */
-.mobile-shell {
-  width: 100%;
-  min-height: 100dvh;
-  background: #fbf7f1;
 }
 
 .scrollbar-hide {

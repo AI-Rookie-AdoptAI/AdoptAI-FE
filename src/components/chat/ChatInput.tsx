@@ -1,14 +1,32 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { PlusCircleIcon, MicIcon, CameraIcon } from "@/components/ui/Icons";
+import { PlusCircleIcon, MicIcon, SendIcon } from "@/components/ui/Icons";
 
 interface ChatInputProps {
   onSendText: (text: string) => void | Promise<void>;
   onSendImages?: (files: File[]) => void | Promise<void>;
-  onSendVoice?: (audioBlob: Blob, durationSec: number) => void | Promise<void>;
+  onSendVoice?: (file: File, durationSec: number) => void | Promise<void>;
   disabled?: boolean;
   placeholder?: string;
+}
+
+function readAudioDuration(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const audio = document.createElement("audio");
+    const url = URL.createObjectURL(file);
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => {
+      const duration = Number.isFinite(audio.duration) ? Math.round(audio.duration) : 0;
+      URL.revokeObjectURL(url);
+      resolve(duration);
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(0);
+    };
+    audio.src = url;
+  });
 }
 
 export default function ChatInput({
@@ -19,11 +37,8 @@ export default function ChatInput({
   placeholder = "메시지 입력…",
 }: ChatInputProps) {
   const [text, setText] = useState("");
-  const [recording, setRecording] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const startTimeRef = useRef<number>(0);
+  const voiceFileRef = useRef<HTMLInputElement>(null);
 
   function handleSubmit() {
     const trimmed = text.trim();
@@ -45,42 +60,12 @@ export default function ChatInput({
     e.target.value = "";
   }
 
-  async function handleVoiceClick() {
-    if (!onSendVoice) return;
-
-    if (recording) {
-      // 녹음 중지
-      recorderRef.current?.stop();
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : "audio/webm";
-      const recorder = new MediaRecorder(stream, { mimeType });
-      chunksRef.current = [];
-      startTimeRef.current = Date.now();
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const durationSec = Math.round((Date.now() - startTimeRef.current) / 1000);
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        setRecording(false);
-        onSendVoice(blob, durationSec);
-      };
-
-      recorder.start();
-      recorderRef.current = recorder;
-      setRecording(true);
-    } catch {
-      alert("마이크 권한이 필요해요. 브라우저 설정에서 허용해 주세요.");
-    }
+  async function handleVoiceFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !onSendVoice) return;
+    const duration = await readAudioDuration(file);
+    onSendVoice(file, duration);
   }
 
   const canSend = text.trim().length > 0 && !disabled;
@@ -105,56 +90,46 @@ export default function ChatInput({
         onChange={handleFileChange}
       />
 
-      <div className="flex-1 bg-surface-200 rounded-[22px] px-4 py-2.5">
+      <div className="flex-1 bg-surface-200 rounded-full px-4 py-2.5">
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={recording ? "녹음 중… 마이크 버튼을 다시 눌러 완료" : placeholder}
-          disabled={disabled || recording}
+          placeholder={placeholder}
+          disabled={disabled}
           className="w-full bg-transparent text-[13.5px] text-brand-800 placeholder:text-brand-350 outline-none"
         />
       </div>
 
       <button
         type="button"
-        aria-label={recording ? "녹음 중지" : "음성 녹음"}
-        onClick={handleVoiceClick}
+        aria-label="음성 파일 첨부"
+        onClick={() => voiceFileRef.current?.click()}
         disabled={disabled}
-        className={`transition-colors shrink-0 disabled:opacity-40 ${
-          recording ? "text-red-500 animate-pulse" : "text-brand-500 hover:text-brand-600"
-        }`}
+        className="text-brand-500 hover:text-brand-600 transition-colors shrink-0 disabled:opacity-40"
       >
         <MicIcon size={26} />
       </button>
+      <input
+        ref={voiceFileRef}
+        type="file"
+        accept="audio/*"
+        className="hidden"
+        onChange={handleVoiceFileChange}
+      />
 
       <button
         type="button"
         aria-label="전송"
         disabled={!canSend}
         onClick={handleSubmit}
-        className={`w-10 h-10 rounded-[20px] flex items-center justify-center shrink-0 transition-colors ${
+        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
           canSend ? "bg-brand-500 hover:bg-brand-600" : "bg-brand-150"
         }`}
       >
-        <SendArrowIcon active={canSend} />
+        <SendIcon size={18} color="white" className={canSend ? "" : "opacity-60"} />
       </button>
     </div>
-  );
-}
-
-function SendArrowIcon({ active }: { active: boolean }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M12 19V5M5 12l7-7 7 7"
-        stroke="white"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity={active ? 1 : 0.6}
-      />
-    </svg>
   );
 }
