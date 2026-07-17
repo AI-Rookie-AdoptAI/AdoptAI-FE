@@ -1,58 +1,54 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import AppHeader from "@/components/layout/AppHeader";
 import BottomNav from "@/components/layout/BottomNav";
 import AnnouncementCard from "@/components/dashboard/AnnouncementCard";
 import Link from "next/link";
 import { SparkleIcon } from "@/components/ui/Icons";
+import { useAuth } from "@/lib/AuthContext";
+import { fetchAnnouncements, type AnnouncementListItem } from "@/lib/chatApi";
 import type { Announcement } from "@/lib/types";
 
-const mockDraft: Announcement[] = [
-  {
-    id: "1",
-    status: "draft",
-    title: "보리",
-    petInfo: { name: "보리", species: "dog", breed: "믹스견", gender: "male", estimatedAge: { value: 3, unit: "년" }, weightKg: 5 },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    status: "in_review",
-    title: "나비",
-    petInfo: { name: "나비", species: "cat", breed: "코리안 숏헤어", gender: "female", estimatedAge: { value: 2, unit: "년" } },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-const mockPublished: Announcement[] = [
-  {
-    id: "3",
-    status: "published",
-    title: "단비",
-    petInfo: { name: "단비", species: "dog", breed: "말티즈", gender: "female", estimatedAge: { value: 1, unit: "년" } },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "4",
-    status: "published",
-    title: "콩이",
-    petInfo: { name: "콩이", species: "cat", breed: "스코티시폴드", gender: "unknown", estimatedAge: { value: 3, unit: "개월" } },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+function toAnnouncement(item: AnnouncementListItem): Announcement {
+  return {
+    id: item.id,
+    status: item.status,
+    title: item.title,
+    petInfo: item.petInfo,
+    sessionId: item.sessionId,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
 
 export default function HomePage() {
+  const { user } = useAuth();
+  const [drafts, setDrafts] = useState<Announcement[]>([]);
+  const [published, setPublished] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetchAnnouncements({ status: "draft", perPage: 5 }),
+      fetchAnnouncements({ status: "published", perPage: 4 }),
+    ])
+      .then(([draftRes, pubRes]) => {
+        setDrafts(draftRes.items.map(toAnnouncement));
+        setPublished(pubRes.items.map(toAnnouncement));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="flex flex-col h-full min-h-screen bg-surface-50">
-      <AppHeader userName="민정" />
+      <AppHeader userName={user?.name ?? ""} />
 
       <main className="flex-1 overflow-y-auto scrollbar-hide pb-[88px]">
-        {/* Greeting */}
         <div className="px-[22px] pt-1 pb-4 flex flex-col gap-1">
           <h1 className="text-[23px] font-extrabold text-brand-800 tracking-tight leading-tight">
-            민정님, 안녕하세요
+            {user?.name ? `${user.name}님, 안녕하세요` : "안녕하세요"}
           </h1>
           <p className="text-[13.5px] text-brand-400">
             구조한 아이를 새 가족과 이어줄 시간이에요
@@ -79,28 +75,38 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* Draft section */}
-        <section className="px-[22px] mb-5">
-          <div className="flex items-center justify-between mb-2.5">
-            <h2 className="text-[13px] font-bold text-brand-600">작성 중</h2>
-            <span className="text-[12px] text-brand-300">{mockDraft.length}건</span>
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <p className="text-[13px] text-brand-300">불러오는 중…</p>
           </div>
-          <div className="flex flex-col gap-2.5">
-            {mockDraft.map((a) => (
-              <AnnouncementCard key={a.id} announcement={a} />
-            ))}
-          </div>
-        </section>
+        ) : (
+          <>
+            {drafts.length > 0 && (
+              <section className="px-[22px] mb-5">
+                <div className="flex items-center justify-between mb-2.5">
+                  <h2 className="text-[13px] font-bold text-brand-600">작성 중</h2>
+                  <span className="text-[12px] text-brand-300">{drafts.length}건</span>
+                </div>
+                <div className="flex flex-col gap-2.5">
+                  {drafts.map((a) => (
+                    <AnnouncementCard key={a.id} announcement={a} />
+                  ))}
+                </div>
+              </section>
+            )}
 
-        {/* Published section */}
-        <section className="px-[22px]">
-          <h2 className="text-[13px] font-bold text-brand-600 mb-2.5">최근 게시</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {mockPublished.map((a) => (
-              <AnnouncementGridCard key={a.id} announcement={a} />
-            ))}
-          </div>
-        </section>
+            {published.length > 0 && (
+              <section className="px-[22px]">
+                <h2 className="text-[13px] font-bold text-brand-600 mb-2.5">최근 게시</h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {published.map((a) => (
+                    <AnnouncementGridCard key={a.id} announcement={a} />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )}
       </main>
 
       <BottomNav />

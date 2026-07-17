@@ -31,11 +31,14 @@ interface ChatContextValue {
   platformId: PlatformId | undefined;
   draft: AnnouncementDraft | undefined;
   sessionId: string | undefined;
+  error: string | null;
   sendText: (text: string) => Promise<void>;
   sendImages: (files: File[]) => Promise<void>;
-  sendVoice: (duration: number) => Promise<void>;
+  sendVoice: (audioBlob: Blob, durationSec: number) => Promise<void>;
   answerChip: (questionKey: string, value: string) => Promise<void>;
+  publish: () => Promise<{ announcementId: string; timeTaken: string } | null>;
   setPlatform: (id: PlatformId) => void;
+  clearError: () => void;
   reset: () => void;
 }
 
@@ -158,7 +161,7 @@ function MockProvider({ children, initialSessionId }: { children: ReactNode; ini
     setIsLoading(false);
   }, [add]);
 
-  const sendVoice = useCallback(async (duration: number) => {
+  const sendVoice = useCallback(async (_blob: Blob, duration: number) => {
     add(makeMsg({
       role: "user",
       type: "voice",
@@ -223,6 +226,13 @@ function MockProvider({ children, initialSessionId }: { children: ReactNode; ini
     setIsLoading(false);
   }, [add]);
 
+  const publish = useCallback(async () => {
+    setStage("publishing");
+    await delay(800);
+    setStage("published");
+    return { announcementId: "mock-ann-1", timeTaken: "1분 42초" };
+  }, []);
+
   const reset = useCallback(() => {
     setMessages([WELCOME]);
     setStage("start");
@@ -234,8 +244,10 @@ function MockProvider({ children, initialSessionId }: { children: ReactNode; ini
     <ChatContext.Provider value={{
       messages, stage, isLoading, platformId, draft,
       sessionId: "mock-session",
-      sendText, sendImages, sendVoice, answerChip,
+      error: null,
+      sendText, sendImages, sendVoice, answerChip, publish,
       setPlatform: setPlatformState,
+      clearError: () => {},
       reset,
     }}>
       {children}
@@ -252,6 +264,14 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
   const [draft, setDraft] = useState<AnnouncementDraft | undefined>();
   const [platformId, setPlatformState] = useState<PlatformId | undefined>();
   const [sessionId, setSessionId] = useState<string | undefined>(initialSessionId);
+  const [error, setError] = useState<string | null>(null);
+
+  const addErrorBubble = useCallback((msg: string) => {
+    setMessages((prev) => [
+      ...prev,
+      makeMsg({ role: "assistant", type: "text", content: `⚠️ ${msg}` }),
+    ]);
+  }, []);
 
   // 세션 초기화: initialSessionId가 있으면 메시지 복원, 없으면 새 세션 생성
   useEffect(() => {
@@ -261,12 +281,12 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
         .then((msgs) => {
           if (msgs.length > 0) setMessages(msgs);
         })
-        .catch((e) => console.error("[ChatContext] 메시지 복원 실패:", e))
+        .catch(() => addErrorBubble("대화 내역을 불러오지 못했어요."))
         .finally(() => setIsLoading(false));
     } else {
       api.createSession()
         .then(setSessionId)
-        .catch((e) => console.error("[ChatContext] 세션 생성 실패:", e));
+        .catch(() => setError("세션을 시작하지 못했어요. 페이지를 새로고침해 주세요."));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -285,7 +305,10 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
   );
 
   const sendText = useCallback(async (text: string) => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      setError("세션이 준비되지 않았어요. 페이지를 새로고침해 주세요.");
+      return;
+    }
     add(makeMsg({ role: "user", type: "text", content: text }));
     setIsLoading(true);
 
@@ -310,8 +333,8 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
             applyResult(result.assistantMessages, result.stage, result.draft);
           },
           (err) => {
-            console.error("[ChatContext] 스트리밍 오류:", err);
             setMessages((prev) => prev.filter((m) => m.id !== tmpId));
+            addErrorBubble(err.message || "메시지 전송에 실패했어요. 다시 시도해 주세요.");
           }
         );
       } finally {
@@ -322,15 +345,18 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
         const result = await api.sendTextMessage(sessionId, text);
         applyResult(result.assistantMessages, result.stage, result.draft);
       } catch (e) {
-        console.error("[ChatContext] 텍스트 전송 실패:", e);
+        addErrorBubble(e instanceof Error ? e.message : "메시지 전송에 실패했어요. 다시 시도해 주세요.");
       } finally {
         setIsLoading(false);
       }
     }
-  }, [sessionId, add, applyResult]);
+  }, [sessionId, add, applyResult, addErrorBubble]);
 
   const sendImages = useCallback(async (files: File[]) => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      setError("세션이 준비되지 않았어요. 페이지를 새로고침해 주세요.");
+      return;
+    }
     const urls = files.map((f) => URL.createObjectURL(f));
     add(makeMsg({
       role: "user", type: "image_group",
@@ -342,31 +368,32 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
       const result = await api.sendImages(sessionId, files);
       applyResult(result.assistantMessages, result.stage);
     } catch (e) {
-      console.error("[ChatContext] 이미지 전송 실패:", e);
+      addErrorBubble(e instanceof Error ? e.message : "사진 전송에 실패했어요. 다시 시도해 주세요.");
     } finally {
       setIsLoading(false);
     }
-  }, [sessionId, add, applyResult]);
+  }, [sessionId, add, applyResult, addErrorBubble]);
 
-  const sendVoice = useCallback(async (duration: number) => {
-    if (!sessionId) return;
+  const sendVoice = useCallback(async (audioBlob: Blob, durationSec: number) => {
+    if (!sessionId) {
+      setError("세션이 준비되지 않았어요. 페이지를 새로고침해 주세요.");
+      return;
+    }
     add(makeMsg({
       role: "user", type: "voice",
-      content: `음성 메모 0:${String(duration).padStart(2, "0")}`,
-      metadata: { voiceDuration: duration },
+      content: `음성 메모 0:${String(durationSec).padStart(2, "0")}`,
+      metadata: { voiceDuration: durationSec },
     }));
     setIsLoading(true);
     try {
-      // TODO: 실제 MediaRecorder Blob을 받으면 여기 교체
-      const dummyBlob = new Blob([], { type: "audio/webm" });
-      const result = await api.sendVoice(sessionId, dummyBlob, duration);
+      const result = await api.sendVoice(sessionId, audioBlob, durationSec);
       applyResult(result.assistantMessages, result.stage, result.draft);
     } catch (e) {
-      console.error("[ChatContext] 음성 전송 실패:", e);
+      addErrorBubble(e instanceof Error ? e.message : "음성 전송에 실패했어요. 다시 시도해 주세요.");
     } finally {
       setIsLoading(false);
     }
-  }, [sessionId, add, applyResult]);
+  }, [sessionId, add, applyResult, addErrorBubble]);
 
   const answerChip = useCallback(async (questionKey: string, value: string) => {
     if (!sessionId) return;
@@ -380,26 +407,45 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
       const result = await api.answerQuestion(sessionId, questionKey, value);
       applyResult(result.assistantMessages, result.stage, result.draft);
     } catch (e) {
-      console.error("[ChatContext] 답변 전송 실패:", e);
+      addErrorBubble(e instanceof Error ? e.message : "답변 전송에 실패했어요. 다시 시도해 주세요.");
     } finally {
       setIsLoading(false);
     }
-  }, [sessionId, add, applyResult]);
+  }, [sessionId, add, applyResult, addErrorBubble]);
+
+  const publish = useCallback(async () => {
+    if (!sessionId) return null;
+    setStage("publishing");
+    setIsLoading(true);
+    try {
+      const result = await api.publishAnnouncement(sessionId, platformId);
+      setStage("published");
+      return result;
+    } catch (e) {
+      setStage("draft_ready");
+      addErrorBubble(e instanceof Error ? e.message : "게시에 실패했어요. 다시 시도해 주세요.");
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [sessionId, platformId, addErrorBubble]);
 
   const reset = useCallback(() => {
     setMessages([WELCOME]);
     setStage("start");
     setDraft(undefined);
+    setError(null);
     api.createSession()
       .then(setSessionId)
-      .catch((e) => console.error("[ChatContext] 세션 재생성 실패:", e));
+      .catch(() => setError("세션을 시작하지 못했어요. 페이지를 새로고침해 주세요."));
   }, []);
 
   return (
     <ChatContext.Provider value={{
-      messages, stage, isLoading, platformId, draft, sessionId,
-      sendText, sendImages, sendVoice, answerChip,
+      messages, stage, isLoading, platformId, draft, sessionId, error,
+      sendText, sendImages, sendVoice, answerChip, publish,
       setPlatform: setPlatformState,
+      clearError: () => setError(null),
       reset,
     }}>
       {children}

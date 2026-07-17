@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChevronLeftIcon, DownloadIcon, EditIcon, GlobeIcon, TargetIcon } from "@/components/ui/Icons";
@@ -8,65 +8,76 @@ import Badge from "@/components/ui/Badge";
 import PlatformPicker from "@/components/announcement/PlatformPicker";
 import ExportFormatPicker from "@/components/announcement/ExportFormatPicker";
 import { ANNOUNCEMENT_STATUS_LABEL, ANNOUNCEMENT_STATUS_COLOR, PLATFORMS } from "@/lib/constants";
-import type { PlatformId, AnnouncementDraft, CustomPlatformConfig, AnnouncementStatus, Announcement } from "@/lib/types";
-
-// ─── Mock 데이터 (실제 구현 시 API 호출로 교체) ────────────────────────────────
-
-const MOCK_ANNOUNCEMENTS: Record<string, Announcement & { draft?: AnnouncementDraft }> = {
-  "1": {
-    id: "1", status: "draft", sessionId: "sess_mock_1",
-    title: "보리", description: "사람을 무척 좋아하고 잘 따르는 3살 남아예요.",
-    petInfo: { name: "보리", species: "dog", breed: "믹스견", gender: "male", estimatedAge: { value: 3, unit: "년" }, weightKg: 5, appearance: "갈색 단모", healthConditions: ["슬개골 탈구 2기", "심장사상충 음성"], personalityNotes: "사람을 잘 따름", neutered: false, rescueRegion: "OO동", rescueDate: "2026-05-18", shelterContact: "010-0000-0000" },
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-    draft: { petName: "보리", title: "사람을 잘 따르는 갈색 믹스견, 보리", description: "사람을 무척 좋아하고 잘 따르는 3살 남아예요. OO동에서 구조되었고, 건강하게 새 가족을 기다리고 있어요.", petInfo: { name: "보리", species: "dog", breed: "믹스견", gender: "male", estimatedAge: { value: 3, unit: "년" }, weightKg: 5, appearance: "갈색 단모", healthConditions: ["슬개골 탈구 2기", "심장사상충 음성"], personalityNotes: "사람을 잘 따름", neutered: false, rescueRegion: "OO동", rescueDate: "2026-05-18", shelterContact: "010-0000-0000" } },
-  },
-  "2": {
-    id: "2", status: "in_review",
-    title: "나비", description: "소심하지만 익숙해지면 곁에 붙어있는 코숏 암컷이에요.",
-    petInfo: { name: "나비", species: "cat", breed: "코리안 숏헤어", gender: "female", estimatedAge: { value: 2, unit: "년" }, weightKg: 3.2, healthConditions: ["FIV 음성", "FELV 음성"], neutered: true, rescueRegion: "마포구", rescueDate: "2026-06-01", shelterContact: "010-0000-0000" },
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-    draft: { petName: "나비", title: "소심하지만 사랑스러운 코숏 나비", description: "소심하지만 익숙해지면 곁에 붙어있는 코숏 암컷이에요.", petInfo: { name: "나비", species: "cat", breed: "코리안 숏헤어", gender: "female", estimatedAge: { value: 2, unit: "년" }, weightKg: 3.2, healthConditions: ["FIV 음성", "FELV 음성"], neutered: true, rescueRegion: "마포구", rescueDate: "2026-06-01", shelterContact: "010-0000-0000" } },
-  },
-  "3": {
-    id: "3", status: "published",
-    title: "단비",
-    petInfo: { name: "단비", species: "dog", breed: "말티즈", gender: "female", estimatedAge: { value: 1, unit: "년" }, weightKg: 2.5, neutered: true, rescueRegion: "은평구", rescueDate: "2026-04-10" },
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-    draft: { petName: "단비", title: "활발하고 명랑한 말티즈 단비", description: "어디서나 씩씩하고 밝은 성격의 1살 말티즈예요.", petInfo: { name: "단비", species: "dog", breed: "말티즈", gender: "female", estimatedAge: { value: 1, unit: "년" }, weightKg: 2.5, neutered: true, rescueRegion: "은평구", rescueDate: "2026-04-10" } },
-  },
-  "4": {
-    id: "4", status: "published",
-    title: "콩이",
-    petInfo: { name: "콩이", species: "cat", breed: "스코티시폴드", gender: "unknown", estimatedAge: { value: 3, unit: "개월" }, healthConditions: ["기생충 음성"], neutered: false, rescueRegion: "강남구" },
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-    draft: { petName: "콩이", title: "동글동글 귀여운 스코티시폴드 콩이", description: "귀 접힌 아가 고양이예요.", petInfo: { name: "콩이", species: "cat", breed: "스코티시폴드", gender: "unknown", estimatedAge: { value: 3, unit: "개월" }, healthConditions: ["기생충 음성"], neutered: false, rescueRegion: "강남구" } },
-  },
-};
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+import type { PlatformId, AnnouncementDraft, CustomPlatformConfig, AnnouncementStatus } from "@/lib/types";
+import { fetchAnnouncement, type AnnouncementDetail } from "@/lib/chatApi";
 
 export default function AnnouncementDetailPage() {
   const params = useParams();
-  const id = String(params.id ?? "1");
+  const id = String(params.id ?? "");
 
-  const data = MOCK_ANNOUNCEMENTS[id] ?? MOCK_ANNOUNCEMENTS["3"];
-  const { status, sessionId, draft } = data;
+  const [data, setData] = useState<AnnouncementDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [platformPickerOpen, setPlatformPickerOpen] = useState(false);
   const [exportPickerOpen, setExportPickerOpen] = useState(false);
   const [platformId, setPlatformId] = useState<PlatformId | undefined>();
   const [customConfig, setCustomConfig] = useState<CustomPlatformConfig | undefined>();
 
+  useEffect(() => {
+    if (!id) return;
+    fetchAnnouncement(id)
+      .then((res) => {
+        setData(res);
+        if (res.platformId) setPlatformId(res.platformId as PlatformId);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "공고를 불러오지 못했어요."))
+      .finally(() => setLoading(false));
+  }, [id]);
+
   function handlePlatformSelect(id: PlatformId, custom?: CustomPlatformConfig) {
     setPlatformId(id);
     setCustomConfig(custom);
   }
 
-  // draft 상태는 채팅으로 연결 (이 페이지에 직접 접근 시 안내)
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-surface-50 items-center justify-center">
+        <p className="text-[13px] text-brand-300">불러오는 중…</p>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex flex-col min-h-screen bg-surface-50">
+        <header className="flex items-center px-[18px] pt-[52px] pb-3 bg-surface-50 border-b border-brand-75">
+          <Link href="/announcements" className="text-brand-450">
+            <ChevronLeftIcon size={24} color="currentColor" />
+          </Link>
+        </header>
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 px-8">
+          <p className="text-[15px] font-bold text-brand-800">공고를 불러오지 못했어요</p>
+          <p className="text-[13px] text-brand-400">{error}</p>
+          <Link href="/announcements" className="text-[13px] font-semibold text-brand-500 underline">
+            목록으로 돌아가기
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const { status, sessionId, draft } = data;
+
   if (status === "draft") {
     return (
       <div className="flex flex-col min-h-screen bg-surface-50">
-        <PageHeader title={data.petInfo.name ?? "작성 중"} status={status} onExport={() => setExportPickerOpen(true)} sessionId={sessionId} />
+        <PageHeader
+          title={data.petInfo.name ?? "작성 중"}
+          status={status}
+          onExport={() => setExportPickerOpen(true)}
+          sessionId={sessionId}
+        />
         <div className="flex-1 flex flex-col items-center justify-center px-8 gap-4 pb-20">
           <div className="w-16 h-16 rounded-2xl bg-surface-100 flex items-center justify-center">
             <span className="text-3xl">✍️</span>
@@ -86,35 +97,36 @@ export default function AnnouncementDetailPage() {
     );
   }
 
-  // in_review / published / closed → 표 형식
-  const { petName, title, description, petInfo } = draft ?? {
-    petName: data.petInfo.name ?? "",
-    title: data.title ?? "",
-    description: data.description ?? "",
-    petInfo: data.petInfo,
-  };
+  const petName = draft?.petName ?? data.petInfo.name ?? "";
+  const title = draft?.title ?? data.title ?? "";
+  const description = draft?.description ?? data.description ?? "";
+  const petInfo = draft?.petInfo ?? data.petInfo;
 
   const infoRows = [
-    { label: "종류",     value: petInfo.breed ?? petInfo.species },
-    { label: "성별",     value: petInfo.gender === "male" ? "수컷" : petInfo.gender === "female" ? "암컷" : "미상" },
-    { label: "중성화",   value: petInfo.neutered === true ? "완료" : petInfo.neutered === false ? "안 함" : "미상" },
+    { label: "종류",      value: petInfo.breed ?? petInfo.species },
+    { label: "성별",      value: petInfo.gender === "male" ? "수컷" : petInfo.gender === "female" ? "암컷" : "미상" },
+    { label: "중성화",    value: petInfo.neutered === true ? "완료" : petInfo.neutered === false ? "안 함" : "미상" },
     { label: "추정 나이", value: petInfo.estimatedAge ? `${petInfo.estimatedAge.value}${petInfo.estimatedAge.unit}` : "미상" },
-    { label: "체중",     value: petInfo.weightKg != null ? `${petInfo.weightKg} kg` : "미상" },
-    petInfo.appearance       ? { label: "외형",    value: petInfo.appearance }                            : null,
+    { label: "체중",      value: petInfo.weightKg != null ? `${petInfo.weightKg} kg` : "미상" },
+    petInfo.appearance       ? { label: "외형",     value: petInfo.appearance }                           : null,
     petInfo.healthConditions?.length
-                             ? { label: "건강",    value: petInfo.healthConditions.join(", ") }           : null,
-    petInfo.personalityNotes ? { label: "성격",    value: petInfo.personalityNotes }                      : null,
+                             ? { label: "건강",     value: petInfo.healthConditions.join(", ") }          : null,
+    petInfo.personalityNotes ? { label: "성격",     value: petInfo.personalityNotes }                     : null,
     petInfo.rescueRegion     ? { label: "구조 지역", value: petInfo.rescueRegion }                        : null,
     petInfo.rescueDate       ? { label: "구조 일자", value: petInfo.rescueDate }                          : null,
-    petInfo.shelterContact   ? { label: "연락처",  value: petInfo.shelterContact }                        : null,
+    petInfo.shelterContact   ? { label: "연락처",   value: petInfo.shelterContact }                       : null,
   ].filter(Boolean) as { label: string; value: string }[];
 
   return (
     <div className="flex flex-col min-h-screen bg-surface-50">
-      <PageHeader title={petName} status={status} onExport={() => setExportPickerOpen(true)} sessionId={sessionId} />
+      <PageHeader
+        title={petName}
+        status={status}
+        onExport={() => setExportPickerOpen(true)}
+        sessionId={sessionId}
+      />
 
       <div className="flex-1 overflow-y-auto scrollbar-hide">
-        {/* Hero image */}
         <div className="w-full h-[200px] bg-gradient-to-br from-[#e7d6c0] to-[#cbae89] relative">
           <div className="absolute bottom-3 left-3">
             <span className="bg-brand-800/60 text-white text-[11px] font-semibold px-2.5 py-1 rounded-[9px]">
@@ -124,7 +136,6 @@ export default function AnnouncementDetailPage() {
         </div>
 
         <div className="px-[18px] pt-4 pb-10 flex flex-col gap-5">
-          {/* 제목 + 설명 */}
           <div className="flex flex-col gap-1.5">
             <h1 className="text-[19px] font-extrabold text-brand-800 leading-snug tracking-tight">{title}</h1>
             {description && (
@@ -132,7 +143,6 @@ export default function AnnouncementDetailPage() {
             )}
           </div>
 
-          {/* 정보 표 */}
           <div>
             <p className="text-[11px] font-bold text-brand-300 uppercase tracking-wide mb-2">기본 정보</p>
             <div className="bg-surface-50 border border-brand-75 rounded-[18px] overflow-hidden">
@@ -150,7 +160,6 @@ export default function AnnouncementDetailPage() {
             </div>
           </div>
 
-          {/* 플랫폼 */}
           <div>
             <p className="text-[11px] font-bold text-brand-300 uppercase tracking-wide mb-2">게시 플랫폼</p>
             <button
@@ -176,7 +185,6 @@ export default function AnnouncementDetailPage() {
             </button>
           </div>
 
-          {/* 내보내기 */}
           <button
             onClick={() => setExportPickerOpen(true)}
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[16px] border border-brand-150 hover:bg-brand-50 transition-colors"
@@ -206,8 +214,6 @@ export default function AnnouncementDetailPage() {
     </div>
   );
 }
-
-// ─── 공용 헤더 ─────────────────────────────────────────────────────────────────
 
 function PageHeader({
   title,

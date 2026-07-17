@@ -5,6 +5,7 @@ import SettingsHeader from "@/components/settings/SettingsHeader";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/lib/AuthContext";
+import { updateProfile } from "@/lib/chatApi";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function ProfilePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   function validate() {
     const e: Record<string, string> = {};
@@ -32,12 +34,20 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    // TODO: PATCH /users/me
-    await new Promise((r) => setTimeout(r, 600));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    setLoading(false);
-    setCurrentPw(""); setNewPw(""); setConfirmPw("");
+    setApiError(null);
+    try {
+      await updateProfile({
+        name: name.trim(),
+        ...(newPw ? { currentPassword: currentPw, newPassword: newPw } : {}),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      setCurrentPw(""); setNewPw(""); setConfirmPw("");
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : "저장에 실패했어요. 다시 시도해 주세요.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -57,8 +67,13 @@ export default function ProfilePage() {
           </button>
         </div>
 
+        {apiError && (
+          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-[14px]">
+            <p className="text-[13px] text-red-600">{apiError}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSave} className="flex flex-col gap-5">
-          {/* 기본 정보 */}
           <Section title="기본 정보">
             <Input
               label="이름"
@@ -77,7 +92,6 @@ export default function ProfilePage() {
             />
           </Section>
 
-          {/* 비밀번호 변경 */}
           <Section title="비밀번호 변경">
             <Input
               label="현재 비밀번호"

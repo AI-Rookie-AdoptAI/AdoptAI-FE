@@ -365,6 +365,206 @@ export async function publishAnnouncement(
   return { announcementId: data.announcement_id, timeTaken: data.time_taken };
 }
 
+// ─── User / Shelter / Announcements / Notification Settings ──────────────────
+
+export interface NotifSettings {
+  adoptionInquiry: boolean;
+  draftReminder: boolean;
+  publishSuccess: boolean;
+  weeklyReport: boolean;
+  appPush: boolean;
+  emailNotif: boolean;
+}
+
+interface ApiNotifSettings {
+  adoption_inquiry: boolean;
+  draft_reminder: boolean;
+  publish_success: boolean;
+  weekly_report: boolean;
+  app_push: boolean;
+  email_notif: boolean;
+}
+
+function mapNotifSettings(r: ApiNotifSettings): NotifSettings {
+  return {
+    adoptionInquiry: r.adoption_inquiry,
+    draftReminder: r.draft_reminder,
+    publishSuccess: r.publish_success,
+    weeklyReport: r.weekly_report,
+    appPush: r.app_push,
+    emailNotif: r.email_notif,
+  };
+}
+
+export async function fetchNotifSettings(): Promise<NotifSettings> {
+  const data = await apiFetch<ApiNotifSettings>("/users/me/notification-settings");
+  return mapNotifSettings(data);
+}
+
+export async function saveNotifSettings(patch: Partial<NotifSettings>): Promise<NotifSettings> {
+  const body: Partial<ApiNotifSettings> = {};
+  if (patch.adoptionInquiry !== undefined) body.adoption_inquiry = patch.adoptionInquiry;
+  if (patch.draftReminder   !== undefined) body.draft_reminder   = patch.draftReminder;
+  if (patch.publishSuccess  !== undefined) body.publish_success  = patch.publishSuccess;
+  if (patch.weeklyReport    !== undefined) body.weekly_report    = patch.weeklyReport;
+  if (patch.appPush         !== undefined) body.app_push         = patch.appPush;
+  if (patch.emailNotif      !== undefined) body.email_notif      = patch.emailNotif;
+  const data = await apiFetch<ApiNotifSettings>("/users/me/notification-settings", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  return mapNotifSettings(data);
+}
+
+export interface ShelterInfo {
+  id?: string;
+  name: string;
+  region: string;
+  address?: string;
+  phone: string;
+  email?: string;
+  capacity?: number;
+  description?: string;
+}
+
+export async function fetchShelter(): Promise<ShelterInfo> {
+  return apiFetch<ShelterInfo>("/shelters/me");
+}
+
+export async function saveShelter(patch: Omit<ShelterInfo, "id">): Promise<ShelterInfo> {
+  return apiFetch<ShelterInfo>("/shelters/me", {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+import type { User } from "./types";
+
+export async function updateProfile(patch: {
+  name?: string;
+  currentPassword?: string;
+  newPassword?: string;
+}): Promise<User> {
+  const body: Record<string, string> = {};
+  if (patch.name)            body.name             = patch.name;
+  if (patch.currentPassword) body.current_password = patch.currentPassword;
+  if (patch.newPassword)     body.new_password     = patch.newPassword;
+  const raw = await apiFetch<{ id: string; email: string; name: string; created_at: string }>(
+    "/users/me",
+    { method: "PATCH", body: JSON.stringify(body) }
+  );
+  return { id: raw.id, email: raw.email, name: raw.name, createdAt: raw.created_at };
+}
+
+export interface AnnouncementListItem {
+  id: string;
+  status: import("./types").AnnouncementStatus;
+  title?: string;
+  petInfo: import("./types").PetInfo;
+  sessionId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AnnouncementListResult {
+  items: AnnouncementListItem[];
+  total: number;
+  page: number;
+  perPage: number;
+}
+
+function mapApiAnnouncement(r: {
+  id: string;
+  status: string;
+  title?: string;
+  description?: string;
+  photos?: string[];
+  platform_id?: string;
+  session_id?: string;
+  created_at: string;
+  updated_at: string;
+  pet_info: { species: string; name?: string; breed?: string; sex?: string; is_neutered?: boolean; weight_kg?: number; estimated_age?: { value: number; unit: "년" | "개월" }; rescue_region?: string; rescue_date?: string; shelter_contact?: string; appearance?: string; health_conditions?: string[]; personality_notes?: string };
+  draft?: unknown;
+}): AnnouncementListItem {
+  return {
+    id: r.id,
+    status: r.status as import("./types").AnnouncementStatus,
+    title: r.title,
+    petInfo: {
+      species: r.pet_info.species,
+      name: r.pet_info.name,
+      breed: r.pet_info.breed,
+      gender: r.pet_info.sex === "수컷" ? "male" : r.pet_info.sex === "암컷" ? "female" : "unknown",
+      neutered: r.pet_info.is_neutered,
+      weightKg: r.pet_info.weight_kg,
+      estimatedAge: r.pet_info.estimated_age,
+      rescueRegion: r.pet_info.rescue_region,
+      rescueDate: r.pet_info.rescue_date,
+      shelterContact: r.pet_info.shelter_contact,
+      appearance: r.pet_info.appearance,
+      healthConditions: r.pet_info.health_conditions,
+      personalityNotes: r.pet_info.personality_notes,
+    },
+    sessionId: r.session_id,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  };
+}
+
+export async function fetchAnnouncements(params?: {
+  status?: string;
+  page?: number;
+  perPage?: number;
+}): Promise<AnnouncementListResult> {
+  const qs = new URLSearchParams();
+  if (params?.status)  qs.set("status", params.status);
+  if (params?.page)    qs.set("page", String(params.page));
+  if (params?.perPage) qs.set("per_page", String(params.perPage));
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  const data = await apiFetch<{
+    items: Parameters<typeof mapApiAnnouncement>[0][];
+    total: number;
+    page: number;
+    per_page: number;
+  }>(`/announcements${query}`);
+  return {
+    items: data.items.map(mapApiAnnouncement),
+    total: data.total,
+    page: data.page,
+    perPage: data.per_page,
+  };
+}
+
+export interface AnnouncementDetail extends AnnouncementListItem {
+  description?: string;
+  photos?: string[];
+  platformId?: string;
+  draft?: import("./types").AnnouncementDraft;
+}
+
+export async function fetchAnnouncement(id: string): Promise<AnnouncementDetail> {
+  const r = await apiFetch<Parameters<typeof mapApiAnnouncement>[0] & {
+    description?: string;
+    photos?: string[];
+    platform_id?: string;
+    draft?: {
+      pet_name: string;
+      title: string;
+      description: string;
+      pet_info: Parameters<typeof mapApiAnnouncement>[0]["pet_info"] & { name?: string; species: string };
+      representative_photo?: string;
+    };
+  }>(`/announcements/${id}`);
+  const base = mapApiAnnouncement(r);
+  return {
+    ...base,
+    description: r.description,
+    photos: r.photos,
+    platformId: r.platform_id,
+    draft: r.draft ? mapApiDraft(r.draft as Parameters<typeof mapApiDraft>[0]) : undefined,
+  };
+}
+
 // ─── SSE streaming (선택적 — 백엔드가 streaming 지원 시 사용) ─────────────────
 
 /**

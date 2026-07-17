@@ -9,7 +9,11 @@ import { useRouter } from "next/navigation";
 
 export default function ChatWindow() {
   const router = useRouter();
-  const { messages, stage, isLoading, sendText, sendImages, sendVoice, answerChip } = useChatContext();
+  const {
+    messages, stage, isLoading, error,
+    sendText, sendImages, sendVoice, answerChip, publish,
+    clearError,
+  } = useChatContext();
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -19,8 +23,13 @@ export default function ChatWindow() {
 
   const isTyping = isLoading || stage === "uploading" || stage === "processing";
 
-  function handlePublish(draft: AnnouncementDraft) {
-    router.push(`/chat/publish?petName=${encodeURIComponent(draft.petName)}`);
+  async function handlePublish(draft: AnnouncementDraft) {
+    const result = await publish();
+    if (result) {
+      router.push(
+        `/chat/publish?petName=${encodeURIComponent(draft.petName)}&announcementId=${result.announcementId}&timeTaken=${encodeURIComponent(result.timeTaken)}`
+      );
+    }
   }
 
   function handleEditDraft() {
@@ -29,6 +38,19 @@ export default function ChatWindow() {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
+      {error && (
+        <div className="mx-4 mt-3 px-4 py-3 bg-red-50 border border-red-200 rounded-[14px] flex items-center justify-between gap-3">
+          <p className="text-[13px] text-red-600 flex-1">{error}</p>
+          <button
+            onClick={clearError}
+            className="text-red-400 hover:text-red-600 text-[18px] leading-none shrink-0"
+            aria-label="닫기"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto scrollbar-hide px-[18px] pt-4 pb-2 flex flex-col gap-3.5"
