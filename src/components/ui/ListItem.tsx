@@ -49,7 +49,7 @@ export default function ListItem({
         <p className="text-[14px] font-semibold text-brand-800 truncate">{title}</p>
         {description && <p className="text-[12px] text-brand-400 mt-0.5 truncate">{description}</p>}
       </div>
-      {control.type === "chevron" && <ChevronRightIcon size={18} color="#cbb9a3" />}
+      {control.type === "chevron" && <ChevronRightIcon size={18} color="#756858" />}
       {control.type === "toggle" && <Toggle checked={control.checked} onChange={control.onChange} />}
       {control.type === "badge" && (
         <span className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-accent-500 text-brand-800 text-[10px] font-bold flex items-center justify-center">

@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Banner from "@/components/ui/Banner";
 
-export default function LoginForm() {
+interface LoginFormProps {
+  onSwitchTab?: () => void;
+}
+
+export default function LoginForm({ onSwitchTab }: LoginFormProps) {
   const { login, loading, error, clearError } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,7 +67,7 @@ export default function LoginForm() {
       />
 
       {error && (
-        <p className="text-[13px] text-red-500 bg-red-50 rounded-xl px-4 py-2.5">{error}</p>
+        <p className="text-[13px] text-destructive-500 bg-destructive-100 rounded-xl px-4 py-2.5">{error}</p>
       )}
 
       <Button type="submit" size="lg" className="w-full mt-1" disabled={loading}>
@@ -73,9 +76,9 @@ export default function LoginForm() {
 
       <p className="text-center text-[13px] text-brand-400">
         아직 계정이 없으신가요?{" "}
-        <Link href="/signup" className="text-brand-500 font-semibold hover:underline">
+        <button type="button" onClick={onSwitchTab} className="text-brand-500 font-semibold hover:underline">
           회원가입
-        </Link>
+        </button>
       </p>
     </form>
   );

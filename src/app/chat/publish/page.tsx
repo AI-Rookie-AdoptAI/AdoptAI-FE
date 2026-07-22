@@ -66,32 +66,55 @@ function PublishContent() {
       <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
 
         <div className="mb-5 flex flex-col items-center" style={{ marginBottom: 22 }}>
-          <div className="w-[84px] h-[84px] bg-green-100 rounded-[42px] flex items-center justify-center">
-            <CheckCircleIcon size={48} color="#6f8a5f" />
+          <div className="w-[84px] h-[84px] bg-confirmed-100 rounded-[42px] flex items-center justify-center">
+            <CheckCircleIcon size={48} color="#155e75" />
           </div>
         </div>
 
         <h1 className="text-[22px] font-extrabold text-brand-800 text-center tracking-tight">
-          공고가 게시됐어요
+          공고 파일이 준비됐어요
         </h1>
+        <p className="text-[13px] text-brand-400 text-center mt-1.5 leading-relaxed">
+          AdoptAI는 공고 파일만 만들어요.<br />
+          아래 체크리스트를 따라 각 플랫폼에 직접 올려 주세요.
+        </p>
         {timeTaken && (
-          <p className="text-[13.5px] text-brand-400 text-center mt-1.5">
+          <p className="text-[12px] text-brand-300 text-center mt-1">
             작성 시간 {timeTaken}
           </p>
         )}
 
         {!loading && (
-          <div className="w-full mt-7 bg-surface-50 border border-brand-75 rounded-[20px] p-[15px] flex items-center gap-3.5">
-            <div className="w-[58px] h-[58px] rounded-[14px] bg-gradient-to-br from-[#e7d6c0] to-[#cbae89] shrink-0" />
+          <div className="w-full mt-5 bg-surface-50 border border-brand-75 rounded-[20px] p-[15px] flex items-center gap-3.5">
+            <div className="w-[52px] h-[52px] rounded-[14px] bg-gradient-to-br from-brand-75 to-brand-150 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-[15px] font-extrabold text-brand-800 truncate">{petDisplay}</p>
-              {subLabel && <p className="text-[12px] text-brand-400 mt-0.5">{subLabel}</p>}
+              {subLabel && <p className="text-[12px] text-brand-450 mt-0.5">{subLabel}</p>}
             </div>
-            <div className="bg-green-100 rounded-[10px] px-2.5 py-1.5 shrink-0">
-              <span className="text-[11px] font-bold text-green-700">게시중</span>
+            <div className="bg-accent-100 rounded-[10px] px-2.5 py-1.5 shrink-0">
+              <span className="text-[11px] font-bold text-accent-600">파일 준비됨</span>
             </div>
           </div>
         )}
+
+        {/* 등록 체크리스트 */}
+        <div className="w-full mt-4 bg-surface-100 rounded-2xl p-4 flex flex-col gap-2.5">
+          <p className="text-[11px] font-bold text-brand-400 uppercase tracking-widest">등록 체크리스트</p>
+          {[
+            "파일 다운로드 완료",
+            "각 플랫폼 앱/사이트에서 새 게시물 작성",
+            "다운로드한 사진 첨부",
+            "복사한 본문 붙여넣기",
+            "게시 후 링크 저장",
+          ].map((step, i) => (
+            <div key={i} className="flex items-center gap-2.5">
+              <div className="w-5 h-5 rounded-full border border-brand-200 flex items-center justify-center shrink-0">
+                <span className="text-[10px] font-bold text-brand-300">{i + 1}</span>
+              </div>
+              <span className="text-[12.5px] text-brand-600">{step}</span>
+            </div>
+          ))}
+        </div>
 
         <div className="w-full mt-5">
           <button

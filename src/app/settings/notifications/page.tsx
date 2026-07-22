@@ -54,8 +54,8 @@ export default function NotificationsPage() {
 
       <main className="flex-1 overflow-y-auto scrollbar-hide px-5 pt-6 pb-10 flex flex-col gap-5">
         {apiError && (
-          <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-[14px]">
-            <p className="text-[13px] text-red-600">{apiError}</p>
+          <div className="px-4 py-3 bg-destructive-100 border border-destructive-200 rounded-[14px]">
+            <p className="text-[13px] text-destructive-600">{apiError}</p>
           </div>
         )}
 

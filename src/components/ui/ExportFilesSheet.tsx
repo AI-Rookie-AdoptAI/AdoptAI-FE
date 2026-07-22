@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { FileTextIcon, CopyIcon, CheckCircleIcon, CircleIcon } from "@/components/ui/Icons";
-import { useEscapeKey } from "@/lib/hooks";
+import { useEscapeKey, useFocusTrap } from "@/lib/hooks";
 
 export interface ExportFile {
   id: string;
@@ -39,6 +39,7 @@ export default function ExportFilesSheet({
   );
 
   useEscapeKey(open, onClose);
+  const trapRef = useFocusTrap(open);
 
   if (!open) return null;
 
@@ -54,14 +55,23 @@ export default function ExportFilesSheet({
   const selectedIds = Array.from(selected);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-brand-900/45 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-[430px] bg-surface-50 rounded-t-[26px] shadow-2xl z-10 flex flex-col items-center pt-3.5 pb-7 px-[18px]">
-        <div className="w-10 h-[5px] rounded-full bg-brand-150 shrink-0" />
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="export-sheet-title"
+      aria-describedby="export-sheet-desc"
+    >
+      <div className="absolute inset-0 bg-brand-900/45 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={trapRef}
+        className="relative w-full max-w-[430px] bg-surface-50 rounded-t-[26px] shadow-2xl z-10 flex flex-col items-center pt-3.5 pb-7 px-[18px]"
+      >
+        <div className="w-10 h-[5px] rounded-full bg-brand-150 shrink-0" aria-hidden="true" />
 
         <div className="w-full pt-3">
-          <h2 className="text-[16.9px] font-extrabold text-brand-800 tracking-tight">{title}</h2>
-          <p className="text-[11.7px] text-brand-400 mt-1">{subtitle}</p>
+          <h2 id="export-sheet-title" className="text-[16.9px] font-extrabold text-brand-800 tracking-tight">{title}</h2>
+          <p id="export-sheet-desc" className="text-[11.7px] text-brand-400 mt-1">{subtitle}</p>
         </div>
 
         <div className="w-full flex flex-col gap-2.5 pt-3">
@@ -71,7 +81,8 @@ export default function ExportFilesSheet({
               <button
                 key={file.id}
                 onClick={() => toggle(file.id)}
-                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border bg-white transition-colors ${
+                aria-pressed={isSelected}
+                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border bg-surface-50 transition-colors ${
                   isSelected ? "border-accent-500" : "border-brand-75"
                 }`}
               >

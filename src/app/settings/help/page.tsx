@@ -66,7 +66,7 @@ export default function HelpPage() {
                   <span className="text-[14px] font-semibold text-brand-800 flex-1">{item.q}</span>
                   <ChevronRightIcon
                     size={18}
-                    color="#cbb9a3"
+                    color="#756858"
                     className={`shrink-0 transition-transform ${openIdx === i ? "rotate-90" : ""}`}
                   />
                 </button>

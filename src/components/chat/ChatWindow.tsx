@@ -24,6 +24,8 @@ export default function ChatWindow() {
   const isTyping = isLoading || stage === "uploading" || stage === "processing";
 
   async function handlePublish(draft: AnnouncementDraft) {
+    // 라우트 전환 시 ChatContext가 언마운트되므로 sessionStorage를 임시 브릿지로 사용해요.
+    try { sessionStorage.setItem("adoptai_draft", JSON.stringify(draft)); } catch { /* private browsing */ }
     const result = await publish();
     if (result) {
       router.push(
@@ -39,11 +41,11 @@ export default function ChatWindow() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       {error && (
-        <div className="mx-4 mt-3 px-4 py-3 bg-red-50 border border-red-200 rounded-[14px] flex items-center justify-between gap-3">
-          <p className="text-[13px] text-red-600 flex-1">{error}</p>
+        <div className="mx-4 mt-3 px-4 py-3 bg-destructive-100 border border-destructive-200 rounded-[14px] flex items-center justify-between gap-3">
+          <p className="text-[13px] text-destructive-600 flex-1">{error}</p>
           <button
             onClick={clearError}
-            className="text-red-400 hover:text-red-600 text-[18px] leading-none shrink-0"
+            className="text-destructive-400 hover:text-destructive-600 text-[18px] leading-none shrink-0"
             aria-label="닫기"
           >
             ×
@@ -95,7 +97,7 @@ function TypingIndicator() {
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="w-1.5 h-1.5 rounded-full bg-brand-300 animate-bounce"
+            className="w-1.5 h-1.5 rounded-full bg-brand-300 animate-bounce motion-reduce:animate-none motion-reduce:opacity-70"
             style={{ animationDelay: `${i * 0.15}s` }}
           />
         ))}

@@ -38,3 +38,13 @@ const PLATFORM_CAPTIONS: Partial<Record<PlatformId, string>> = {
 export function getPlatformCaption(draft: AnnouncementDraft, platformId: PlatformId): string {
   return PLATFORM_CAPTIONS[platformId] ?? draft.description;
 }
+
+/** sessionStorage에서 저장된 draft를 읽어요. 없으면 MOCK_DRAFT를 반환해요. */
+export function getStoredDraft(): AnnouncementDraft {
+  if (typeof window === "undefined") return MOCK_DRAFT;
+  try {
+    const raw = sessionStorage.getItem("adoptai_draft");
+    if (raw) return JSON.parse(raw) as AnnouncementDraft;
+  } catch { /* ignore */ }
+  return MOCK_DRAFT;
+}

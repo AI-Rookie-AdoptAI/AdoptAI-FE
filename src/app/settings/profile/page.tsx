@@ -63,14 +63,19 @@ export default function ProfilePage() {
               {name.slice(0, 1) || "?"}
             </span>
           </div>
-          <button className="text-[13px] font-semibold text-brand-500 hover:underline">
-            사진 변경
+          <button
+            disabled
+            aria-disabled="true"
+            title="사진 변경 기능은 준비 중이에요"
+            className="text-[13px] font-semibold text-brand-300 cursor-not-allowed"
+          >
+            사진 변경 (준비 중)
           </button>
         </div>
 
         {apiError && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-[14px]">
-            <p className="text-[13px] text-red-600">{apiError}</p>
+          <div className="mb-4 px-4 py-3 bg-destructive-100 border border-destructive-200 rounded-[14px]">
+            <p className="text-[13px] text-destructive-600">{apiError}</p>
           </div>
         )}
 

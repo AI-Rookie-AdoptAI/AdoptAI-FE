@@ -88,8 +88,8 @@ export default function ShelterPage() {
 
       <main className="flex-1 overflow-y-auto scrollbar-hide px-5 pt-6 pb-10">
         {apiError && (
-          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-[14px]">
-            <p className="text-[13px] text-red-600">{apiError}</p>
+          <div className="mb-4 px-4 py-3 bg-destructive-100 border border-destructive-200 rounded-[14px]">
+            <p className="text-[13px] text-destructive-600">{apiError}</p>
           </div>
         )}
 
@@ -115,13 +115,13 @@ export default function ShelterPage() {
                   value={form.region}
                   onChange={(e) => set("region", e.target.value)}
                   className={`h-12 px-4 rounded-2xl border text-[15px] text-brand-800 bg-surface-50 outline-none appearance-none transition-colors ${
-                    errors.region ? "border-red-400" : "border-brand-100 focus:border-brand-500"
+                    errors.region ? "border-destructive-400" : "border-brand-100 focus:border-brand-500"
                   }`}
                 >
                   <option value="">지역 선택</option>
                   {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
-                {errors.region && <p className="text-[12px] text-red-500">{errors.region}</p>}
+                {errors.region && <p className="text-[12px] text-destructive-500">{errors.region}</p>}
               </div>
 
               <Input

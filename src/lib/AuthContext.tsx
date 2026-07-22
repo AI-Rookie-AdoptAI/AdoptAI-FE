@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) await apiLogout(token);
     clearTokens();
     setState({ user: null, loading: false, error: null });
-    router.push("/login");
+    router.push("/intro");
   }, [router]);
 
   const clearError = useCallback(

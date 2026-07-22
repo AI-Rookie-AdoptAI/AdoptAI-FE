@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup"];
+const PUBLIC_PATHS = ["/login", "/signup", "/intro"];
 const TOKEN_COOKIE = "adopt_access_token";
 
 export function middleware(request: NextRequest) {
@@ -10,9 +10,8 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get(TOKEN_COOKIE)?.value;
 
   if (!isPublic && !token) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
+    const introUrl = new URL("/intro", request.url);
+    return NextResponse.redirect(introUrl);
   }
 
   if (isPublic && token) {

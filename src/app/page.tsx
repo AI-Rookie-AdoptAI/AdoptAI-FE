@@ -9,10 +9,12 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ExportFilesSheet from "@/components/ui/ExportFilesSheet";
 import Toast from "@/components/ui/Toast";
 import Link from "next/link";
-import { SparkleIcon, CameraIcon, MicIcon, EditIcon, TrashIcon, CopyIcon } from "@/components/ui/Icons";
+import { SparkleIcon, CameraIcon, MicIcon, EditIcon, TrashIcon, CopyIcon, PetsIcon } from "@/components/ui/Icons";
 import { useAuth } from "@/lib/AuthContext";
 import { fetchAnnouncements, type AnnouncementListItem } from "@/lib/chatApi";
 import type { Announcement } from "@/lib/types";
+import { PET_PHOTO_GRADIENTS } from "@/lib/constants";
+import { hashIndex } from "@/lib/utils";
 
 function toAnnouncement(item: AnnouncementListItem): Announcement {
   return {
@@ -27,9 +29,9 @@ function toAnnouncement(item: AnnouncementListItem): Announcement {
 }
 
 const quickStart = [
-  { label: "사진으로", Icon: CameraIcon, href: "/chat" },
-  { label: "음성으로", Icon: MicIcon, href: "/chat" },
-  { label: "직접 입력", Icon: EditIcon, href: "/chat" },
+  { label: "사진으로", Icon: CameraIcon, href: "/chat?mode=photo" },
+  { label: "음성으로", Icon: MicIcon, href: "/chat?mode=voice" },
+  { label: "직접 입력", Icon: EditIcon, href: "/chat?mode=text" },
 ];
 
 export default function HomePage() {
@@ -117,6 +119,16 @@ export default function HomePage() {
           <div className="flex justify-center py-10">
             <p className="text-[13px] text-brand-300">불러오는 중…</p>
           </div>
+        ) : drafts.length === 0 && published.length === 0 ? (
+          <section className="px-[22px] py-8 flex flex-col items-center gap-3 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-surface-100 flex items-center justify-center text-brand-200">
+              <PetsIcon size={28} color="currentColor" />
+            </div>
+            <div>
+              <p className="text-[15px] font-bold text-brand-700">아직 공고가 없어요</p>
+              <p className="text-[12.5px] text-brand-400 mt-1">위 버튼을 눌러 첫 공고를 만들어 보세요</p>
+            </div>
+          </section>
         ) : (
           <>
             {drafts.length > 0 && (
@@ -155,20 +167,14 @@ export default function HomePage() {
         subtitle={actionSheetTarget?.petInfo.name ?? actionSheetTarget?.title}
         items={[
           {
-            label: "이름 변경",
+            label: "이름 변경 (준비 중)",
             icon: <EditIcon size={22} color="currentColor" />,
-            onClick: () => {
-              setActionSheetTarget(null);
-              showToast("이름을 변경했어요");
-            },
+            onClick: () => setActionSheetTarget(null),
           },
           {
-            label: "복제",
+            label: "복제 (준비 중)",
             icon: <CopyIcon size={22} color="currentColor" />,
-            onClick: () => {
-              setActionSheetTarget(null);
-              showToast("공고를 복제했어요");
-            },
+            onClick: () => setActionSheetTarget(null),
           },
           {
             label: "파일 다시 내보내기",
@@ -194,7 +200,11 @@ export default function HomePage() {
         open={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => {
-          showToast(`${deleteTarget?.petInfo.name ?? "공고"} 초안을 삭제했어요`);
+          if (deleteTarget) {
+            setDrafts((prev) => prev.filter((a) => a.id !== deleteTarget.id));
+            setPublished((prev) => prev.filter((a) => a.id !== deleteTarget.id));
+            showToast(`${deleteTarget.petInfo.name ?? "공고"} 초안을 삭제했어요`);
+          }
           setDeleteTarget(null);
         }}
         title="초안을 삭제할까요?"
@@ -203,29 +213,26 @@ export default function HomePage() {
 
       {exportTarget && (
         <ExportFilesSheet
-          open={exportTarget !== null}
+          open
           onClose={() => setExportTarget(null)}
-          announcement={exportTarget}
+          subtitle={`${exportTarget.petInfo.name ?? exportTarget.title ?? "공고"} · 저장할 파일을 선택하세요`}
+          files={[]}
+          onCopy={() => setExportTarget(null)}
+          onSave={() => { showToast("파일을 저장했어요"); setExportTarget(null); }}
         />
       )}
 
-      <Toast message={toast} onDismiss={() => setToast("")} />
+      <Toast open={toast !== ""} message={toast} onClose={() => setToast("")} />
     </div>
   );
 }
 
 function AnnouncementGridCard({ announcement }: { announcement: Announcement }) {
-  const gradients = [
-    "from-[#eadccb] to-[#d6c1a6]",
-    "from-[#e8e0d0] to-[#cfbe9e]",
-    "from-[#e7d6c0] to-[#cbae89]",
-    "from-[#e6dcc8] to-[#d2b891]",
-  ];
-  const idx = parseInt(announcement.id) % gradients.length;
+  const gradient = PET_PHOTO_GRADIENTS[hashIndex(announcement.id, PET_PHOTO_GRADIENTS.length)];
 
   return (
     <Link href={`/announcements/${announcement.id}`} className="flex flex-col gap-1.5">
-      <div className={`aspect-square rounded-[16px] bg-gradient-to-br ${gradients[idx]}`} />
+      <div className={`aspect-square rounded-[16px] bg-gradient-to-br ${gradient}`} />
       <p className="text-[13px] font-bold text-brand-800">
         {announcement.petInfo.name ?? announcement.petInfo.breed}
       </p>

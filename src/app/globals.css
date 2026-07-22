@@ -5,43 +5,50 @@
 
 @theme {
   /* Brand (Orange/Brown) */
-  --color-brand-900: #241d17;
-  --color-brand-800: #2a211b;
-  --color-brand-700: #3a2e22;
-  --color-brand-600: #5a4a3a;
-  --color-brand-500: #8a5a2b;
-  --color-brand-450: #6b5b49;
-  --color-brand-400: #8a7a68;
-  --color-brand-350: #a89882;
-  --color-brand-300: #9a8b7c;
-  --color-brand-200: #cbb9a3;
-  --color-brand-150: #e0d5c6;
-  --color-brand-100: #e4d8c8;
-  --color-brand-75: #efe5d8;
-  --color-brand-50: #ebe1d4;
-  --color-brand-25: #f0e7da;
+  --color-brand-900: #2f2926;
+  --color-brand-800: #372f2a;
+  --color-brand-700: #43372e;
+  --color-brand-600: #5d4b3b;
+  --color-brand-500: #8a4b2e;
+  --color-brand-450: #6b5543;
+  --color-brand-400: #65584a;
+  --color-brand-350: #716557;
+  --color-brand-300: #756858;
+  --color-brand-200: #756858;
+  --color-brand-150: #d7ccc1;
+  --color-brand-100: #ebe1d7;
+  --color-brand-75: #f1e9e2;
+  --color-brand-50: #f8f2eb;
+  --color-brand-25: #fcf8f4;
 
   /* Surface (Cream/Beige) */
-  --color-surface-200: #f3ede4;
-  --color-surface-150: #f3ede4;
-  --color-surface-100: #f3eadf;
-  --color-surface-50: #fbf7f1;
+  --color-surface-200: #eee7df;
+  --color-surface-150: #f4efe9;
+  --color-surface-100: #f8f3ed;
+  --color-surface-50: #fffdf9;
 
   /* Green (Positive/Yes indicator) */
-  --color-green-700: #4e6443;
-  --color-green-600: #6f8a5f;
-  --color-green-500: #6f8a5f;
-  --color-green-400: #8fb27c;
-  --color-green-100: #e8eee2;
+  --color-confirmed-700: #155e75;
+  --color-confirmed-600: #0f6d8c;
+  --color-confirmed-500: #1b7ea5;
+  --color-confirmed-400: #4a9fbd;
+  --color-confirmed-100: #e2f2f7;
 
   /* Accent (CTA orange — dialog/sheet/progress/toast overlay system) */
-  --color-accent-600: #c57c2c;
+  --color-accent-700: #7a3f09;
+  --color-accent-600: #8a4b0f;
   --color-accent-500: #e7a24a;
-  --color-accent-100: #fbeee0;
+  --color-accent-100: #f9e9d4;
 
   /* Destructive (delete/remove confirmations) */
-  --color-destructive-500: #b5504a;
-  --color-destructive-100: #f6e4e1;
+  --color-destructive-700: #7d1d39;
+  --color-destructive-600: #8f2947;
+  --color-destructive-500: #a33955;
+  --color-destructive-400: #b5546c;
+  --color-destructive-300: #de9cab;
+  --color-destructive-200: #f1cbd3;
+  --color-destructive-100: #fbecef;
+  --color-focus-500: #1d4ed8;
 
   /* Font family */
   --font-pretendard: "Pretendard Variable", Pretendard, -apple-system,
@@ -49,8 +56,8 @@
 }
 
 :root {
-  --background: #ebe1d4;
-  --foreground: #2a211b;
+  --background: #fffdf9;
+  --foreground: #372f2a;
 }
 
 body {
@@ -59,6 +66,30 @@ body {
   font-family: var(--font-pretendard);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:where(a, button, input, textarea, select, [role="switch"]):focus-visible {
+  outline: 3px solid var(--color-focus-500);
+  outline-offset: 3px;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --color-brand-400: #5d4b3b;
+    --color-brand-350: #65584a;
+    --color-brand-300: #65584a;
+    --color-brand-200: #65584a;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .scrollbar-hide {

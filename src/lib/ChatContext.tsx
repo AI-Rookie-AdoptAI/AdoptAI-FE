@@ -365,8 +365,10 @@ function ApiProvider({ children, initialSessionId }: { children: ReactNode; init
     setIsLoading(true);
     try {
       const result = await api.sendImages(sessionId, files);
+      urls.forEach((u) => URL.revokeObjectURL(u));
       applyResult(result.assistantMessages, result.stage);
     } catch (e) {
+      urls.forEach((u) => URL.revokeObjectURL(u));
       addErrorBubble(e instanceof Error ? e.message : "사진 전송에 실패했어요. 다시 시도해 주세요.");
     } finally {
       setIsLoading(false);

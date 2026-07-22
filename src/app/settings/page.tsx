@@ -39,7 +39,7 @@ export default function SettingsPage() {
             </p>
             <p className="text-[12px] text-brand-400 truncate">{user?.email ?? "test@test.com"}</p>
           </div>
-          <ChevronRightIcon size={20} color="#cbb9a3" />
+          <ChevronRightIcon size={20} color="#756858" />
         </Link>
 
         {/* 메뉴 목록 */}

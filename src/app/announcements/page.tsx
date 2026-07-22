@@ -82,8 +82,8 @@ export default function AnnouncementsPage() {
         </div>
 
         {error && (
-          <div className="mx-[22px] mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-[14px]">
-            <p className="text-[13px] text-red-600">{error}</p>
+          <div className="mx-[22px] mb-4 px-4 py-3 bg-destructive-100 border border-destructive-200 rounded-[14px]">
+            <p className="text-[13px] text-destructive-600">{error}</p>
           </div>
         )}
 
@@ -97,7 +97,7 @@ export default function AnnouncementsPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <p className="text-[13px] text-brand-300">불러오는 중…</p>
+            <p className="text-[13px] text-brand-500">불러오는 중…</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="px-[22px] py-16 flex flex-col items-center gap-3 text-center">

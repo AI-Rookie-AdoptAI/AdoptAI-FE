@@ -29,8 +29,8 @@ export const ANNOUNCEMENT_STATUS_LABEL: Record<AnnouncementStatus, string> = {
 
 export const ANNOUNCEMENT_STATUS_COLOR: Record<AnnouncementStatus, string> = {
   draft: "bg-brand-100 text-brand-500",
-  in_review: "bg-green-500/15 text-green-700",
-  published: "bg-green-500/15 text-green-700",
+  in_review: "bg-accent-100 text-accent-700",
+  published: "bg-confirmed-100 text-confirmed-700",
   closed: "bg-brand-100 text-brand-300",
 };
 

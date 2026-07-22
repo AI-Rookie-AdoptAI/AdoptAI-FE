@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
-export default function SignupForm() {
+interface SignupFormProps {
+  onSwitchTab?: () => void;
+}
+
+export default function SignupForm({ onSwitchTab }: SignupFormProps) {
   const { signup, loading, error, clearError } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -87,7 +90,7 @@ export default function SignupForm() {
       />
 
       {error && (
-        <p className="text-[13px] text-red-500 bg-red-50 rounded-xl px-4 py-2.5">{error}</p>
+        <p className="text-[13px] text-destructive-500 bg-destructive-100 rounded-xl px-4 py-2.5">{error}</p>
       )}
 
       <Button type="submit" size="lg" className="w-full mt-1" disabled={loading}>
@@ -96,9 +99,9 @@ export default function SignupForm() {
 
       <p className="text-center text-[13px] text-brand-400">
         이미 계정이 있으신가요?{" "}
-        <Link href="/login" className="text-brand-500 font-semibold hover:underline">
+        <button type="button" onClick={onSwitchTab} className="text-brand-500 font-semibold hover:underline">
           로그인
-        </Link>
+        </button>
       </p>
     </form>
   );

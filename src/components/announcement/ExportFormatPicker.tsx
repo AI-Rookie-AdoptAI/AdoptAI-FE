@@ -58,7 +58,7 @@ export default function ExportFormatPicker({ open, onClose, draft, platformId }:
               <div className="w-4 h-4 border-2 border-brand-300 border-t-brand-500 rounded-full animate-spin shrink-0" />
             )}
             {f.id === "clipboard" && copied && (
-              <span className="text-[11px] font-bold text-green-700 shrink-0">복사됨!</span>
+              <span className="text-[11px] font-bold text-confirmed-700 shrink-0">복사됨!</span>
             )}
           </button>
         ))}

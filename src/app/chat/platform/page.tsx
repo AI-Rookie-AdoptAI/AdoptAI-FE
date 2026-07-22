@@ -52,7 +52,7 @@ function PlatformSelectContent() {
       <header className="flex items-center gap-2.5 px-[18px] pt-[52px] pb-3 bg-surface-50 border-b border-brand-75 shrink-0">
         <Link
           href="/chat"
-          className="w-6 h-6 flex items-center justify-center text-brand-500 hover:text-brand-600 transition-colors"
+          className="w-11 h-11 -ml-2.5 flex items-center justify-center text-brand-500 hover:text-brand-600 transition-colors"
           aria-label="뒤로 가기"
         >
           <ChevronLeftIcon size={24} color="currentColor" />
@@ -77,7 +77,7 @@ function PlatformSelectContent() {
                 key={platform.id}
                 onClick={() => !disabled && toggle(platform.id)}
                 disabled={disabled}
-                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border bg-white transition-colors text-left ${
+                className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border bg-surface-50 transition-colors text-left ${
                   disabled
                     ? "border-brand-75 opacity-60 cursor-not-allowed"
                     : isSelected

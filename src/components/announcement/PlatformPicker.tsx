@@ -211,7 +211,7 @@ function PlatformCard({
               <CheckIcon size={9} color="white" />
             </div>
           ) : platform.id === "custom" ? (
-            <ChevronRightIcon size={16} color="#cbb9a3" />
+            <ChevronRightIcon size={16} color="#756858" />
           ) : null}
         </div>
         <p className="text-[12px] text-brand-400 mt-0.5">{platform.description}</p>

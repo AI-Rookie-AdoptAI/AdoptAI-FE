@@ -16,7 +16,9 @@ export default function SearchBar({ value, onChange, placeholder = "검색", cla
         <SearchIcon size={16} color="currentColor" />
       </span>
       <input
-        type="text"
+        type="search"
+        role="searchbox"
+        aria-label={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

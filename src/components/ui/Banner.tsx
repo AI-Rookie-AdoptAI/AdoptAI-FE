@@ -13,7 +13,7 @@ interface BannerProps {
 const toneClass = {
   accent: "bg-accent-100 text-accent-600",
   neutral: "bg-surface-100 text-brand-500",
-  success: "bg-green-100 text-green-700",
+  success: "bg-confirmed-100 text-confirmed-700",
 };
 
 export default function Banner({ title, description, icon, action, tone = "accent", className = "" }: BannerProps) {

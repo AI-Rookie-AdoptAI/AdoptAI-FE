@@ -24,8 +24,13 @@ export default function Toast({ open, message, onClose, actionLabel, onAction, a
 
   return (
     <div className="fixed left-0 right-0 bottom-24 z-50 flex justify-center px-4 pointer-events-none">
-      <div className="w-full max-w-[391px] bg-brand-800 rounded-2xl shadow-2xl flex items-center gap-2.5 px-4 py-3.5 pointer-events-auto">
-        <span className="text-green-400 shrink-0">
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="w-full max-w-[391px] bg-brand-800 rounded-2xl shadow-2xl flex items-center gap-2.5 px-4 py-3.5 pointer-events-auto"
+      >
+        <span className="text-confirmed-400 shrink-0">
           <CheckCircleIcon size={21} color="currentColor" />
         </span>
         <p className="flex-1 min-w-0 text-[12.7px] font-semibold text-white">{message}</p>

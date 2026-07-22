@@ -1,6 +1,8 @@
 import type { ChatMessage, AnnouncementDraft } from "@/lib/types";
 import { SparkleIcon, VerifiedIcon, WaveformIcon } from "@/components/ui/Icons";
 import Tag from "@/components/ui/Tag";
+import { PET_PHOTO_GRADIENTS } from "@/lib/constants";
+import { hashIndex } from "@/lib/utils";
 
 interface ChatBubbleProps {
   message: ChatMessage;
@@ -120,8 +122,8 @@ export default function ChatBubble({ message, onChipSelect, onPublish, onEditDra
             {/* 검사 음성 태그가 있을 때만 verified 배지 표시 */}
             {(pi.healthConditions ?? []).filter((c) => c.includes("음성")).map((c, i) => (
               <div key={i} className="flex items-center gap-1.5 mt-2">
-                <VerifiedIcon size={14} color="#4e6443" />
-                <span className="text-[11.5px] font-semibold text-green-700">{c}</span>
+                <VerifiedIcon size={14} color="#155e75" />
+                <span className="text-[11.5px] font-semibold text-confirmed-700">{c}</span>
               </div>
             ))}
           </div>
@@ -187,9 +189,9 @@ function AIAvatar() {
 
 function FactBadge({ text = "들은 사실만 공고에 담아요" }: { text?: string }) {
   return (
-    <div className="flex items-center gap-1.5 bg-green-100 px-3 py-2 rounded-[12px] self-start ml-[39px]">
-      <VerifiedIcon size={14} color="#4e6443" />
-      <span className="text-[11.5px] font-semibold text-green-700">{text}</span>
+    <div className="flex items-center gap-1.5 bg-confirmed-100 px-3 py-2 rounded-[12px] self-start ml-[39px]">
+      <VerifiedIcon size={14} color="#155e75" />
+      <span className="text-[11.5px] font-semibold text-confirmed-700">{text}</span>
     </div>
   );
 }
@@ -204,10 +206,11 @@ function DraftCard({
   onEdit?: () => void;
 }) {
   const { title, description, petInfo } = draft;
+  const gradient = PET_PHOTO_GRADIENTS[hashIndex(draft.title ?? "draft", PET_PHOTO_GRADIENTS.length)];
 
   return (
     <div className="bg-surface-50 border border-brand-75 rounded-[20px] overflow-hidden shadow-[0_6px_16px_-8px_rgba(40,28,18,0.18)]">
-      <div className="w-full h-[180px] bg-gradient-to-br from-[#e7d6c0] to-[#cbae89] relative flex items-end p-3">
+      <div className={`w-full h-[180px] bg-gradient-to-br ${gradient} relative flex items-end p-3`}>
         <span className="bg-brand-800/60 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg">
           대표 사진
         </span>

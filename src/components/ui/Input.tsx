@@ -15,11 +15,11 @@ export default function Input({ label, error, id, className = "", ...props }: In
       <input
         id={inputId}
         className={`h-12 px-4 rounded-xl border text-[14px] text-brand-800 placeholder:text-brand-300 bg-surface-50 outline-none transition-colors
-          ${error ? "border-red-400 focus:border-red-500" : "border-brand-150 focus:border-brand-500"}
+          ${error ? "border-destructive-400 focus:border-destructive-600 focus-visible:ring-2 focus-visible:ring-destructive-300" : "border-brand-150 focus:border-brand-500 focus-visible:ring-2 focus-visible:ring-brand-300"}
           disabled:opacity-40 ${className}`}
         {...props}
       />
-      {error && <p className="text-[12px] text-red-500">{error}</p>}
+      {error && <p className="text-[12px] text-destructive-500">{error}</p>}
     </div>
   );
 }

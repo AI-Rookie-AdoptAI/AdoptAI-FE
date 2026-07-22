@@ -8,7 +8,7 @@ import Banner from "@/components/ui/Banner";
 import Tag from "@/components/ui/Tag";
 import { ChevronLeftIcon, SparkleIcon } from "@/components/ui/Icons";
 import { PLATFORMS } from "@/lib/constants";
-import { MOCK_DRAFT, getPlatformCaption } from "@/lib/mockDraft";
+import { getStoredDraft, getPlatformCaption } from "@/lib/mockDraft";
 import type { PlatformId } from "@/lib/types";
 
 function parsePlatforms(raw: string | null): PlatformId[] {
@@ -19,7 +19,8 @@ function parsePlatforms(raw: string | null): PlatformId[] {
 function PreviewContent() {
   const params = useSearchParams();
   const router = useRouter();
-  const petName = params.get("petName") ?? MOCK_DRAFT.petName;
+  const storedDraft = getStoredDraft();
+  const petName = params.get("petName") ?? storedDraft.petName;
   const platformIds = parsePlatforms(params.get("platforms"));
   const platforms = PLATFORMS.filter((p) => platformIds.includes(p.id));
 
@@ -37,7 +38,7 @@ function PreviewContent() {
       <header className="flex items-center gap-2.5 px-[18px] pt-[52px] pb-3 bg-surface-50 border-b border-brand-75 shrink-0">
         <Link
           href="/chat/platform"
-          className="w-6 h-6 flex items-center justify-center text-brand-500 hover:text-brand-600 transition-colors"
+          className="w-11 h-11 -ml-2.5 flex items-center justify-center text-brand-500 hover:text-brand-600 transition-colors"
           aria-label="뒤로 가기"
         >
           <ChevronLeftIcon size={24} color="currentColor" />
@@ -73,8 +74,8 @@ function PreviewContent() {
             </div>
             <div className="flex gap-2.5 items-start">
               <div className="w-[82px] h-[82px] rounded-xl bg-gradient-to-br from-[#eadccb] to-[#cbab82] shrink-0" />
-              <p className="text-[11.8px] text-[#3a2e22] leading-[1.55] whitespace-pre-line">
-                {getPlatformCaption(MOCK_DRAFT, platform.id)}
+              <p className="text-[11.8px] text-brand-700 leading-[1.55] whitespace-pre-line">
+                {getPlatformCaption(storedDraft, platform.id)}
               </p>
             </div>
           </div>

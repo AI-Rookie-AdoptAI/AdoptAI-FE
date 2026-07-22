@@ -19,7 +19,7 @@ const sizeClass = {
 const toneClass = {
   accent: "bg-accent-100 text-accent-600",
   solid: "bg-accent-500 text-brand-800",
-  success: "bg-green-100 text-green-700",
+  success: "bg-confirmed-100 text-confirmed-700",
   neutral: "bg-surface-100 text-brand-450",
 };
 

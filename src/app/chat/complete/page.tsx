@@ -6,7 +6,7 @@ import Link from "next/link";
 import Toast from "@/components/ui/Toast";
 import { CheckCircleIcon, DownloadIcon, FileTextIcon, FileIcon } from "@/components/ui/Icons";
 import { PLATFORMS } from "@/lib/constants";
-import { MOCK_DRAFT } from "@/lib/mockDraft";
+import { getStoredDraft } from "@/lib/mockDraft";
 import { buildExportContent, downloadFile } from "@/lib/export";
 import type { ExportFormat, PlatformId } from "@/lib/types";
 
@@ -34,13 +34,14 @@ function kb(content: string): string {
 
 function CompleteContent() {
   const params = useSearchParams();
-  const petName = params.get("petName") ?? MOCK_DRAFT.petName;
+  const storedDraft = getStoredDraft();
+  const petName = params.get("petName") ?? storedDraft.petName;
   const platformIds = parsePlatforms(params.get("platforms"));
   const platforms = PLATFORMS.filter((p) => platformIds.includes(p.id));
 
   const files = platforms.map((platform) => {
     const format = FORMAT_BY_PLATFORM[platform.id] ?? "markdown";
-    const content = buildExportContent(MOCK_DRAFT, format, platform.id);
+    const content = buildExportContent(storedDraft, format, platform.id);
     const ext = format === "markdown" ? "md" : format === "json" ? "json" : "txt";
     return {
       platform,
@@ -73,8 +74,8 @@ function CompleteContent() {
     <div className="flex flex-col h-full min-h-screen bg-surface-50">
       <main className="flex-1 overflow-y-auto scrollbar-hide px-5 pt-9 pb-6 flex flex-col gap-5">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-20 h-20 rounded-[40px] bg-green-100 flex items-center justify-center">
-            <CheckCircleIcon size={40} color="#6f8a5f" />
+          <div className="w-20 h-20 rounded-[40px] bg-confirmed-100 flex items-center justify-center">
+            <CheckCircleIcon size={40} color="#155e75" />
           </div>
           <div className="flex flex-col items-center gap-1.5 text-center w-[180px]">
             <h1 className="text-[20.8px] font-extrabold text-brand-800 tracking-tight">

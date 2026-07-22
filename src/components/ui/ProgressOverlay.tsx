@@ -17,7 +17,14 @@ export default function ProgressOverlay({ open, title, description, progress, su
   const clamped = Math.min(100, Math.max(0, progress));
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-brand-900/85 backdrop-blur-md px-8">
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-brand-900/85 backdrop-blur-md px-8"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      aria-live="polite"
+      aria-busy="true"
+    >
       <div className="w-[88px] h-[88px] rounded-full border-4 border-accent-500 flex items-center justify-center shrink-0">
         <div className="w-[52px] h-[52px] rounded-2xl overflow-hidden shadow-lg">
           <AppIcon size={52} />

@@ -38,7 +38,7 @@ export default function AnnouncementCard({ announcement, onMore }: AnnouncementC
         <p className="text-[15px] font-bold text-brand-800 truncate">
           {title ?? petInfo.name ?? petInfo.breed}
         </p>
-        <p className="text-[12px] text-brand-300 mt-0.5 truncate">
+        <p className="text-[12px] text-brand-600 mt-0.5 truncate">
           {petInfo.breed ?? petInfo.species}
           {petInfo.gender !== "unknown" && ` · ${petInfo.gender === "male" ? "수컷" : "암컷"}`}
           {petInfo.estimatedAge && ` · ${petInfo.estimatedAge.value}${petInfo.estimatedAge.unit}`}
@@ -63,7 +63,7 @@ export default function AnnouncementCard({ announcement, onMore }: AnnouncementC
             <MoreHorizIcon size={18} color="currentColor" />
           </button>
         ) : (
-          <ChevronRightIcon size={20} color="#cbb9a3" />
+          <ChevronRightIcon size={20} color="#756858" />
         )}
       </div>
     </Link>
